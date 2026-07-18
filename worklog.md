@@ -59,3 +59,30 @@ Stage Summary:
 - Fully responsive across desktop, tablet, and mobile
 - All images load correctly
 - Clean lint, no console errors
+
+---
+Task ID: 3
+Agent: Main Agent
+Task: Create Courses Listing page using same design language as homepage
+
+Work Log:
+- Reviewed existing homepage CourseSection component to extract exact card styling (bg-white, rounded-xl, shadow-md hover:shadow-xl, h-48 images, group-hover:scale-105, p-5 content, navy duration badge, IndianRupee icon, gold filled star, "View Details" link)
+- Created /src/data/courses.ts with 15 courses across 6 categories, each with id, title, subtitle, duration, price, rating, image, category, level (Beginner/Intermediate/Advanced), featured/popular flags, student count, icon
+- Created CourseHero: light-blue bg with breadcrumb (Home / Courses), "Our Programs" badge, "Explore Our Courses" heading with gold underline SVG, quick stats (15+ Courses, 6 Categories)
+- Created CourseSearch: search input with icon + clear button, level dropdown filter, category tabs (7 scrollable buttons with active state bg-navy text-white), results count with "Clear All Filters" button
+- Created CourseCard: identical markup to homepage card with additions (level badge, student count, category overlay on hover) — same classes for card container, image, duration badge, price, rating, "View Details" link
+- Created CourseGrid: client component with useState for search/category/level filters, 3 sections (Featured Courses with gold badge, Popular Courses with green badge, All/Search Results), empty state with reset button
+- Created /src/app/courses/page.tsx route assembling CourseHero + CourseGrid + CTA + Footer
+- Updated Header: "Courses" nav item href changed from "#courses" to "/courses", dropdown course links also point to "/courses"
+- Build successful: all 6 routes compile cleanly
+- Verified with Agent Browser: all sections render, cards match homepage exactly, search/filter functional, responsive grid works
+- Verified mobile at 375px: single column cards, hamburger menu, scrollable category tabs, full-width search and level filter
+
+Stage Summary:
+- Courses Listing page at /courses with Hero, Search/Filter, Featured, Popular, All Courses sections
+- Course cards identical to homepage: same styling, shadows, border radius, colors, typography
+- Responsive grid: 5 columns desktop (xl), 3 columns large tablet (lg), 2 columns small tablet (sm), 1 column mobile
+- Search by name/keyword, filter by category and level, clear all filters
+- 15 courses across 6 categories with level badges and student counts
+- Same Header, Footer, CTA as homepage — consistent design language
+- Clean build, no errors

@@ -22,7 +22,7 @@ const topBarInfo = {
 const navItems = [
   { label: "Home", href: "/" },
   { label: "About Us", href: "/about" },
-  { label: "Courses", href: "#courses", hasDropdown: true },
+  { label: "Courses", href: "/courses", hasDropdown: true },
   { label: "Teachers", href: "#teachers" },
   { label: "Results", href: "#results" },
   { label: "Verify Certificate", href: "#certificate" },
@@ -126,7 +126,7 @@ export default function Header() {
                       {courseDropdown.map((course) => (
                         <a
                           key={course}
-                          href="#courses"
+                          href="/courses"
                           className="block px-4 py-2.5 text-sm text-text-gray hover:bg-light-blue hover:text-navy transition-colors"
                         >
                           {course}

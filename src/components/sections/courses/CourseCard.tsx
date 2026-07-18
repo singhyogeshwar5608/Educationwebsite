@@ -52,7 +52,7 @@ export default function CourseCard({ course }: CourseCardProps) {
         </div>
         {/* View Details Button - same as homepage */}
         <a
-          href={`#${course.id}`}
+          href={`/courses/${course.id}`}
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy hover:text-navy-light transition-colors"
         >
           View Details

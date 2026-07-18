@@ -86,3 +86,36 @@ Stage Summary:
 - 15 courses across 6 categories with level badges and student counts
 - Same Header, Footer, CTA as homepage — consistent design language
 - Clean build, no errors
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: Create Course Details page using same design language as homepage
+
+Work Log:
+- Read all existing components to ensure design consistency
+- Extended course data (courses.ts) with full detail info: registrationFee, longDescription, trainer (name/title/experience/specializations/image), features[], syllabus[] with modules/durations/topics, eligibility[], careerOpportunities[] with salary ranges, gallery[], faqs[]
+- Created CourseDetailHero: light-blue bg with breadcrumb (Home/Courses/CourseName), level+category badges, h1 heading, subtitle, description, quick info row (duration/fee/rating/students), "Enroll Now" gold + "View Syllabus" navy buttons, course image with floating duration card
+- Created CourseOverview: "About This Course" section with long description, 2-column key highlights grid (green CheckCircle), sidebar with 6 info cards (duration, course fee, registration fee, modules, students, certificate), navy CTA card
+- Created TrainerCard: trainer image + name, title, experience badge, specializations tags
+- Created CourseSyllabus: accordion with navy module number squares, module titles, topic count + duration, expandable topic lists with gold dot markers
+- Created Eligibility: dual-column layout — "Who Can Enroll?" with green CheckCircle items + "Career Opportunities" with numbered items and green salary text
+- Created CertificatePreview: visual certificate mockup with gold border, Award watermark, "Certificate of Completion", student name placeholder, 5 certification benefits with CheckCircle, "Get Certified" navy button
+- Created CourseGallery: 2x2 image grid with hover zoom and navy overlay
+- Created CourseFAQ: accordion matching homepage FAQ pattern with course-specific questions
+- Created RelatedCourses: course cards from same category, fallback to other categories
+- Created dynamic route at /courses/[id]/page.tsx with all sections + AnimateOnScroll + CTA + Footer, includes "Course Not Found" fallback
+- Updated CourseCard View Details link from #anchor to /courses/[id]
+- Fixed CourseGallery grid to 2x2 instead of 4-column row
+- Build successful, all routes compile cleanly
+- Verified /courses/adca renders all 10 sections correctly
+- Tested 6 different course routes (adca, dca, tally-prime, digital-marketing, web-development, graphic-design) — all return 200
+- Verified design language: same navy/gold/green colors, Poppins font, rounded-xl cards, shadow-md, button styles, spacing py-16 lg:py-20, max-w-7xl container
+
+Stage Summary:
+- Course Details page at /courses/[id] with 12+ sections matching homepage design language
+- Dynamic routing works for all 15 courses
+- Same colors, typography, spacing, card styles, shadows, border radius, buttons as homepage
+- CourseCard "View Details" links now navigate to /courses/[id]
+- Fully responsive across desktop, tablet, and mobile
+- Clean build, no errors

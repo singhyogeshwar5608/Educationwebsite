@@ -146,3 +146,29 @@ Stage Summary:
 - Same design language: gold accents, rounded-xl, navy-based gradient, Poppins font
 - Fully responsive with mobile stacking
 - Clean build, no errors
+---
+Task ID: 1
+Agent: Main
+Task: Build pixel-perfect certificate template from uploaded SUNNY Certificate.pdf
+
+Work Log:
+- Analyzed uploaded SUNNY Certificate.pdf using PyMuPDF text extraction
+- Extracted exact text positions (in PDF points) for all 17 dynamic fields
+- Extracted image positions: background (full page), photo (248.8×281.7, 96×124.5pts), QR code (261.9×649.1, 70.1×70.1pts)
+- Rendered PDF sections at high DPI for VLM visual analysis
+- Used VLM to analyze header, middle, bottom sections and border patterns in detail
+- Verified background image already in public/cert-assets/certificate-bg.jpg (2480×3508px)
+- Updated CertificateTemplate.tsx with exact PDF point positions (px units matching 72dpi)
+- Updated generate-certificate API route HTML template with exact same positions
+- Updated VerificationCard.tsx certificate preview with corrected percentage-based positions
+- Fixed background image path from /cert/certificate_bg.jpg to /cert-assets/certificate-bg.jpg
+- Updated enrollment numbers from HIIM/S/ to ZTCA/S/ format
+- Confirmed all Z-TECH CAREER ACADEMY details (phone, email, address, owner) are in place across all files
+- Build passes successfully
+
+Stage Summary:
+- Certificate template now uses exact PDF coordinates for pixel-perfect text overlay
+- All 8 certificate data fields + photo + QR positioned at correct locations
+- Background image extracted from original certificate PDF serves as template
+- API route generates PDF via Playwright using same HTML template
+- Company info fully updated to Z-TECH CAREER ACADEMY

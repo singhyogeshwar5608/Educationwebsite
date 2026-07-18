@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "# Certificate Bottom Section Analysis\n\n## 1. Student Details Layout\n- **Labels and values arranged in a horizontal row** with labels on the left and values on the right\n- \"Name of Student\" label with value \"ROHTAS\" (left side)\n- \"Mother's Name\" label with value \"RAJ BALA\" (right side)\n- Both fields have horizontal lines underneath for填写\n- Clean, aligned layout with consistent spacing\n\n## 2. Course Information Layout\n- **Vertical arrangement** with labels and values in separate rows\n- \"Course Name\" label with value \"Nursery Teacher Training Course\"\n- \"Course Duration\" label with value \"2 Year\"\n- \"From\" and \"To\" labels with dates \"May 2023\" and \"Apr 2025\"\n- Each field has horizontal lines for填写\n- Clear hierarchical organization\n\n## 3. Exam Results Section\n- **Percentage and grade positioned side by side**\n- \"He/She has Passed the Examination with\" label\n- \"84.30%\" (percentage) positioned to the right of this label\n- \"Grade\" label with \"A+\" value to the far right\n- All elements aligned horizontally on the same line\n\n## 4. Signature Areas\n- **Two signature areas**:\n  - Left: \"Sign. of Authorized Signatory\" with a handwritten signature above it\n  - Right: \"Seal of Authorized Signatory\" (no signature, just the label)\n- Both positioned in the middle section of the certificate\n- Symmetrically placed around the QR code\n\n## 5. Stamp/Seal Images\n- **Two official seals**:\n  - Top right: Circular seal with \"HARYANA INSTITUTE IT & MANAGEMENT\" text and an emblem\n  - Bottom center: Two additional seals:\n    - Left: MSME (Micro, Small & Medium Enterprises) logo with \"Ministry of MSME, Govt. of India\"\n    - Right: ISO 9001:2015 certification seal (blue circular badge)\n\n## 6. QR Code Position\n- **Centered horizontally** in the middle of the certificate\n- Positioned between the signature areas\n- Square format with black and white pattern\n\n## 7. Footer Text and Logos\n- **Bottom section contains**:\n  - Website: \"www.hiimedu.in\" with globe icon\n  - Email: \"verification@hiimedu.in\" with envelope icon\n- Both positioned at the very bottom, centered\n- Additional MSME and ISO logos in the bottom center area\n\n## 8. Background Color/Gradient\n- **Soft gradient background** transitioning from:\n  - Light blue/teal at the top\n  - To pale yellow/cream in the middle\n  - To light pink at the bottom\n- Subtle, professional appearance with a watermark pattern of \"HARYANA INSTITUTE IT & MANAGEMENT\" repeated diagonally\n- Blue decorative border with intricate pattern around the entire certificate edge\n\nThe overall design is formal and professional, with clear organization of information and official branding elements.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1784379256,
+  "id": "20260718205359b0176a141f4046ec",
+  "model": "glm-4.6v",
+  "object": "chat.completion",
+  "request_id": "20260718205359b0176a141f4046ec",
+  "usage": {
+    "completion_tokens": 639,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 4648,
+    "prompt_tokens_details": {
+      "cached_tokens": 4
+    },
+    "total_tokens": 5287
+  }
+}

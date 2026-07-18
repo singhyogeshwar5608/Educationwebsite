@@ -13,57 +13,56 @@ interface CertificateTemplateProps {
  * dynamic text fields at the exact same coordinates as the original PDF.
  *
  * Page: A4 (595.28 x 841.89 pts → 210mm x 297mm)
- * All positions are in mm relative to the A4 page.
+ * All positions are derived from PDF text extraction (PyMuPDF).
  *
  * Layout reference from PDF text extraction:
- *   Row 1 (y≈86mm): Centre Code | Session | Enrollment No | Roll No | Serial No
- *   Student Photo: centered ~100-143mm from top, 88-121mm from left
- *   Row 2 (y≈166mm): Student Name | DOB
- *   Row 3 (y≈175mm): Father's Name | Mother's Name
- *   Row 4 (y≈184mm): Course Name
- *   Row 5 (y≈192mm): Duration | From | To
- *   Row 6 (y≈200mm): To (completion date)
- *   Row 7 (y≈210mm): Institute/Study Centre Name
- *   Row 8 (y≈218mm): Percentage | Grade
- *   QR Code: centered ~229-254mm from top
- *   Signatures: ~240mm from bottom area
+ *   Row 1 (y≈243.7pt): Centre Code | Session | Enrollment No | Roll No | Serial No
+ *   Photo: left≈248.8, top≈281.7, 96×124.5 pts
+ *   Row 2 (y≈472pt): Student Name | DOB
+ *   Row 3 (y≈497.3pt): Father's Name | Mother's Name
+ *   Row 4 (y≈522.5pt): Course Name
+ *   Row 5 (y≈545.2pt): Duration | From | To
+ *   Row 6 (y≈569.7pt): Completion Date
+ *   Row 7 (y≈594.1pt): Institute / Study Centre Name
+ *   Row 8 (y≈617.7pt): Percentage | Grade
+ *   QR Code: left≈261.9, top≈649.1, 70.1×70.1 pts
  */
 
 export default function CertificateTemplate({ certificate }: CertificateTemplateProps) {
   return (
     <div
       style={{
-        width: "210mm",
-        height: "297mm",
+        width: "595.28px",
+        height: "841.89px",
         position: "relative",
         fontFamily: "'DejaVu Serif', 'Noto Serif', Georgia, serif",
         overflow: "hidden",
         background: "#fff",
       }}
     >
-      {/* ── Background Image (the certificate design) ── */}
+      {/* ── Background Image (the certificate design with border, header, labels) ── */}
       <img
-        src="/cert/certificate_bg.jpg"
+        src="/cert-assets/certificate-bg.jpg"
         alt=""
         style={{
           position: "absolute",
           top: 0,
           left: 0,
-          width: "210mm",
-          height: "297mm",
+          width: "595.28px",
+          height: "841.89px",
           pointerEvents: "none",
           userSelect: "none",
         }}
       />
 
-      {/* ── Watermark overlay (diagonal repeated text) ── */}
+      {/* ── Watermark overlay (diagonal repeated institute name) ── */}
       <div
         style={{
           position: "absolute",
           top: 0,
           left: 0,
-          width: "210mm",
-          height: "297mm",
+          width: "595.28px",
+          height: "841.89px",
           pointerEvents: "none",
           overflow: "hidden",
           zIndex: 1,
@@ -74,18 +73,18 @@ export default function CertificateTemplate({ certificate }: CertificateTemplate
             key={i}
             style={{
               position: "absolute",
-              top: `${-30 + i * 30}mm`,
-              left: "-20mm",
-              width: "260mm",
-              fontSize: "14mm",
+              top: `${-80 + i * 80}px`,
+              left: "-60px",
+              width: "750px",
+              fontSize: "40px",
               fontWeight: 800,
-              color: "rgba(10, 38, 71, 0.04)",
+              color: "rgba(10, 38, 71, 0.035)",
               transform: "rotate(-35deg)",
               transformOrigin: "center center",
               whiteSpace: "nowrap",
-              letterSpacing: "3mm",
+              letterSpacing: "8px",
               textAlign: "center",
-              lineHeight: "28mm",
+              lineHeight: "80px",
               fontFamily: "'DejaVu Serif', Georgia, serif",
             }}
           >
@@ -94,89 +93,86 @@ export default function CertificateTemplate({ certificate }: CertificateTemplate
         ))}
       </div>
 
-      {/* ── Dynamic Text Fields ── */}
-      <div style={{ position: "absolute", top: 0, left: 0, width: "210mm", height: "297mm", zIndex: 2 }}>
+      {/* ── Dynamic Text Fields (exact positions from PDF extraction) ── */}
+      <div style={{ position: "absolute", top: 0, left: 0, width: "595.28px", height: "841.89px", zIndex: 2 }}>
 
         {/* ═══ Row 1: Centre Code | Session | Enrollment No | Roll No | Serial No ═══ */}
-        {/* Centre Code — x≈21mm, y≈86mm */}
-        <div style={{
+        {/* Font: 9pt bold, color: #000, all at top≈243.7pt */}
+        <span style={{
           position: "absolute",
-          top: "86mm",
-          left: "21mm",
-          width: "25mm",
-          fontSize: "3.2mm",
+          left: "60.7px",
+          top: "243.7px",
+          fontSize: "9pt",
           fontWeight: 700,
           color: "#000",
-          textAlign: "center",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.instituteCode}
-        </div>
+        </span>
 
-        {/* Session — x≈59mm, y≈86mm */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "86mm",
-          left: "59mm",
-          width: "25mm",
-          fontSize: "3.2mm",
+          left: "168.8px",
+          top: "243.7px",
+          fontSize: "9pt",
           fontWeight: 700,
           color: "#000",
-          textAlign: "center",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.session}
-        </div>
+        </span>
 
-        {/* Enrollment No — x≈92mm, y≈86mm */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "86mm",
-          left: "90mm",
-          width: "35mm",
-          fontSize: "3.2mm",
+          left: "261.7px",
+          top: "243.7px",
+          fontSize: "9pt",
           fontWeight: 700,
           color: "#000",
-          textAlign: "center",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.enrollmentNo}
-        </div>
+        </span>
 
-        {/* Roll No — x≈137mm, y≈86mm */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "86mm",
-          left: "135mm",
-          width: "20mm",
-          fontSize: "3.2mm",
+          left: "388.9px",
+          top: "243.7px",
+          fontSize: "9pt",
           fontWeight: 700,
           color: "#000",
-          textAlign: "center",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.rollNumber}
-        </div>
+        </span>
 
-        {/* Serial No — x≈170mm, y≈86mm */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "86mm",
-          left: "168mm",
-          width: "22mm",
-          fontSize: "3.2mm",
+          left: "484.1px",
+          top: "243.7px",
+          fontSize: "9pt",
           fontWeight: 700,
           color: "#000",
-          textAlign: "center",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.serialNo}
-        </div>
+        </span>
 
         {/* ═══ Student Photo ═══ */}
+        {/* Position from PDF: left=248.8, top=281.7, 96×124.5 pts */}
         <div style={{
           position: "absolute",
-          top: "100mm",
-          left: "88mm",
-          width: "33mm",
-          height: "44mm",
-          border: "0.8mm solid #0056A0",
-          borderRadius: "0.5mm",
+          left: "248.8px",
+          top: "281.7px",
+          width: "96px",
+          height: "124.5px",
+          border: "1.5px solid #0056A0",
+          borderRadius: "1px",
           overflow: "hidden",
           background: "#fff",
           zIndex: 3,
@@ -196,196 +192,199 @@ export default function CertificateTemplate({ certificate }: CertificateTemplate
         </div>
 
         {/* ═══ Row 2: Student Name | DOB ═══ */}
-        {/* Student Name — x≈102mm, y≈166mm */}
-        <div style={{
+        {/* Font: 11pt bold, color: #000 */}
+        <span style={{
           position: "absolute",
-          top: "166mm",
-          left: "30mm",
-          width: "110mm",
-          fontSize: "3.9mm",
+          left: "290px",
+          top: "472px",
+          fontSize: "11pt",
           fontWeight: 700,
           color: "#000",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.studentName}
-        </div>
+        </span>
 
-        {/* DOB — x≈172mm, y≈166mm */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "166mm",
-          left: "155mm",
-          width: "40mm",
-          fontSize: "3.9mm",
+          left: "488px",
+          top: "472px",
+          fontSize: "11pt",
           fontWeight: 700,
           color: "#000",
-          textAlign: "center",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.dob}
-        </div>
+        </span>
 
         {/* ═══ Row 3: Father's Name | Mother's Name ═══ */}
-        {/* Father's Name — x≈59mm, y≈175mm */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "175mm",
-          left: "30mm",
-          width: "110mm",
-          fontSize: "3.9mm",
+          left: "167.8px",
+          top: "497.3px",
+          fontSize: "11pt",
           fontWeight: 700,
           color: "#000",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.fatherName}
-        </div>
+        </span>
 
-        {/* Mother's Name — x≈155mm, y≈175mm */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "175mm",
-          left: "140mm",
-          width: "55mm",
-          fontSize: "3.9mm",
+          left: "438.4px",
+          top: "497.3px",
+          fontSize: "11pt",
           fontWeight: 700,
           color: "#000",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.motherName}
-        </div>
+        </span>
 
         {/* ═══ Row 4: Course Name ═══ */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "184mm",
-          left: "30mm",
-          width: "150mm",
-          fontSize: "3.9mm",
+          left: "246.3px",
+          top: "522.5px",
+          fontSize: "11pt",
           fontWeight: 700,
           color: "#000",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
+          textAlign: "center",
         }}>
           {certificate.courseName}
-        </div>
+        </span>
 
         {/* ═══ Row 5: Duration | From | To ═══ */}
-        {/* Duration — x≈71mm, y≈192mm */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "192mm",
-          left: "50mm",
-          width: "30mm",
-          fontSize: "3.9mm",
+          left: "201.1px",
+          top: "545.2px",
+          fontSize: "11pt",
           fontWeight: 700,
           color: "#000",
-          textAlign: "center",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.courseDuration}
-        </div>
+        </span>
 
-        {/* From — x≈132mm, y≈192mm */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "192mm",
-          left: "115mm",
-          width: "30mm",
-          fontSize: "3.9mm",
+          left: "375.1px",
+          top: "545.2px",
+          fontSize: "11pt",
           fontWeight: 700,
           color: "#000",
-          textAlign: "center",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.courseDurationFrom}
-        </div>
+        </span>
 
-        {/* To — x≈173mm, y≈192mm */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "192mm",
-          left: "155mm",
-          width: "30mm",
-          fontSize: "3.9mm",
+          left: "491.4px",
+          top: "545.2px",
+          fontSize: "11pt",
           fontWeight: 700,
           color: "#000",
-          textAlign: "center",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.courseDurationTo}
-        </div>
+        </span>
 
-        {/* ═══ Row 6: Completion Date (same "To" field repeated) ═══ */}
-        <div style={{
+        {/* ═══ Row 6: Completion Date (exam passing date) ═══ */}
+        <span style={{
           position: "absolute",
-          top: "200mm",
-          left: "155mm",
-          width: "30mm",
-          fontSize: "3.9mm",
+          left: "470.7px",
+          top: "569.7px",
+          fontSize: "11pt",
           fontWeight: 700,
           color: "#000",
-          textAlign: "center",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.courseDurationTo}
-        </div>
+        </span>
 
         {/* ═══ Row 7: Institute / Study Centre Name ═══ */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "210mm",
-          left: "30mm",
-          width: "150mm",
-          fontSize: "3.9mm",
+          left: "298.1px",
+          top: "594.1px",
+          fontSize: "11pt",
           fontWeight: 700,
           color: "#000",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
+          textAlign: "center",
         }}>
           {certificate.instituteName}
-        </div>
+        </span>
 
         {/* ═══ Row 8: Percentage | Grade ═══ */}
-        {/* Percentage — x≈115mm, y≈218mm */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "218mm",
-          left: "100mm",
-          width: "35mm",
-          fontSize: "3.9mm",
+          left: "327.4px",
+          top: "617.7px",
+          fontSize: "11pt",
           fontWeight: 700,
           color: "#000",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
           textAlign: "center",
         }}>
           {certificate.percentage}
-        </div>
+        </span>
 
-        {/* Grade — x≈189mm, y≈218mm */}
-        <div style={{
+        <span style={{
           position: "absolute",
-          top: "218mm",
-          left: "180mm",
-          width: "20mm",
-          fontSize: "3.9mm",
+          left: "535.8px",
+          top: "617.7px",
+          fontSize: "11pt",
           fontWeight: 700,
           color: "#000",
-          textAlign: "center",
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
         }}>
           {certificate.grade}
-        </div>
+        </span>
 
         {/* ═══ QR Code ═══ */}
+        {/* Position from PDF: left=261.9, top=649.1, 70.1×70.1 pts */}
         <div style={{
           position: "absolute",
-          top: "229mm",
-          left: "92mm",
-          width: "25mm",
-          height: "25mm",
-          border: "0.3mm solid #000",
+          left: "261.9px",
+          top: "649.1px",
+          width: "70.1px",
+          height: "70.1px",
+          border: "0.5px solid #000",
           background: "#fff",
           zIndex: 3,
         }}>
           <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%" }}>
             <rect width="100" height="100" fill="white" />
-            {/* Position detection patterns */}
+            {/* Position detection patterns (top-left) */}
             <rect x="5" y="5" width="25" height="25" fill="#0A2647" />
             <rect x="8" y="8" width="19" height="19" fill="white" />
             <rect x="11" y="11" width="13" height="13" fill="#0A2647" />
+            {/* Position detection patterns (top-right) */}
             <rect x="70" y="5" width="25" height="25" fill="#0A2647" />
             <rect x="73" y="8" width="19" height="19" fill="white" />
             <rect x="76" y="11" width="13" height="13" fill="#0A2647" />
+            {/* Position detection patterns (bottom-left) */}
             <rect x="5" y="70" width="25" height="25" fill="#0A2647" />
             <rect x="8" y="73" width="19" height="19" fill="white" />
             <rect x="11" y="76" width="13" height="13" fill="#0A2647" />
-            {/* Data modules */}
+            {/* Data modules — unique per certificate */}
             <rect x="35" y="5" width="5" height="5" fill="#0A2647" />
             <rect x="45" y="5" width="5" height="5" fill="#0A2647" />
             <rect x="55" y="10" width="5" height="5" fill="#0A2647" />

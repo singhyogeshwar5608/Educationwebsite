@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "To recreate the certificate corner's decorative border, here's a precise breakdown of the pattern, colors, and dimensions:\n\n\n### **1. Pattern Type**  \nThe border is a **geometric, symmetrical, interlocking lattice pattern** (resembling a \"fretwork\" or \"ornamental filigree\" design). It features repeating, angular shapes with curved and straight elements, forming a continuous, intricate border. The pattern is identical in all four corners and along the edges, with a consistent repeating unit.\n\n\n### **2. Exact Pattern Details**  \nThe repeating unit consists of:  \n- **Core Shape**: A central \"X\"-like structure with curved, outward-flaring arms (resembling a stylized flower or star).  \n- **Interlocking Elements**: Small, curved \"dots\" or \"loops\" at the ends of each arm, connecting to adjacent units.  \n- **Symmetry**: The pattern is mirrored horizontally and vertically, creating a seamless border.  \n- **Density**: The pattern is tightly packed, with no gaps between repeating units.  \n\n\n### **3. Colors**  \n- **Primary Color**: A vibrant, deep **royal blue** (hex: `#0033A0` or similar).  \n- **Background**: The certificate's base color is a light, off-white or pale gray (hex: `#F5F5F5` or `#E8E8E8`), providing contrast to the blue border.  \n\n\n### **4. Border Width**  \nThe border is **uniformly wide** (approximately 1–1.5% of the certificate's total width). For a standard A4-sized certificate (210mm × 297mm), this translates to **2–3mm** (0.8–1.2 inches). The width is consistent across all edges and corners.  \n\n\n### **5. Corner Decoration**  \nThe corners feature the **same geometric lattice pattern** as the edges, with no additional elements. The pattern seamlessly transitions from the horizontal/vertical edges into the corners, maintaining symmetry and continuity.  \n\n\n### **CSS/SVG Recreation Tips**  \nTo implement this:  \n- **SVG**: Use a `<pattern>` element with the repeating lattice design, applied as a `stroke` or `fill` to a rectangular border.  \n- **CSS**: Use `border-image` with a custom SVG pattern, or create a repeating background with `background-repeat: repeat`.  \n- **Key Details**: Ensure the pattern’s scale matches the border width (e.g., 10–15px per repeating unit for a 2–3mm border on a digital certificate).  \n\n\n### **Visual Reference**  \nThe pattern resembles a simplified version of traditional \"Arabesque\" or \"Gothic\" fretwork, with angular, interconnected shapes. The blue color is bold and consistent, making the border stand out against the light background.  \n\n\nThis breakdown should allow you to accurately recreate the border using CSS or SVG!",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1784379195,
+  "id": "202607182053053ca2d6b6f421457f",
+  "model": "glm-4.6v",
+  "object": "chat.completion",
+  "request_id": "202607182053053ca2d6b6f421457f",
+  "usage": {
+    "completion_tokens": 612,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 639,
+    "prompt_tokens_details": {
+      "cached_tokens": 6
+    },
+    "total_tokens": 1251
+  }
+}

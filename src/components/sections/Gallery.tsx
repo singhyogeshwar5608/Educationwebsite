@@ -36,7 +36,7 @@ export default function Gallery() {
             Moments From Our Institute
           </h2>
           <p className="text-text-gray text-lg max-w-xl mx-auto">
-            A glimpse of life at Future Skills Institute.
+            A glimpse of life at Z-TECH CAREER ACADEMY.
           </p>
         </div>
 

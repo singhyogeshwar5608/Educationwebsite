@@ -39,7 +39,7 @@ const reasons = [
   {
     title: "Lifetime Support & Alumni Network",
     description:
-      "Once a part of Future Skills Institute, you receive lifetime access to our resources, alumni network, and career guidance — even after course completion.",
+      "Once a part of Z-TECH CAREER ACADEMY, you receive lifetime access to our resources, alumni network, and career guidance — even after course completion.",
   },
 ];
 
@@ -52,7 +52,7 @@ export default function AboutWhyChooseUs() {
             Our Advantage
           </span>
           <h2 className="text-3xl sm:text-4xl font-bold text-navy mt-2 mb-4">
-            Why Choose Future Skills Institute?
+            Why Choose Z-TECH CAREER ACADEMY?
           </h2>
           <p className="text-text-gray text-lg max-w-2xl mx-auto">
             Discover the reasons thousands of students trust us for their career

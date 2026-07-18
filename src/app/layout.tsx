@@ -10,11 +10,11 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Future Skills Institute - Learn Today, Lead Tomorrow",
+  title: "Z-TECH CAREER ACADEMY - Learn Today, Lead Tomorrow",
   description:
     "Join industry-focused courses designed to build in-demand skills and shape your successful career. Government certified courses with placement assistance.",
   keywords: [
-    "Future Skills Institute",
+    "Z-TECH CAREER ACADEMY",
     "Computer Courses",
     "ADCA",
     "DCA",

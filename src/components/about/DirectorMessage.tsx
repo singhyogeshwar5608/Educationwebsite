@@ -23,7 +23,7 @@ export default function DirectorMessage() {
                 <div className="w-32 h-32 rounded-xl overflow-hidden shadow-md">
                   <img
                     src="https://sfile.chatglm.cn/images-ppt/03652fc7ba0d.jpg"
-                    alt="Director of Future Skills Institute"
+                    alt="Vijay Kumar Singla - Director of Z-TECH CAREER ACADEMY"
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -32,7 +32,7 @@ export default function DirectorMessage() {
               {/* Message */}
               <div className="flex-1">
                 <p className="text-text-gray leading-relaxed mb-4 text-lg italic">
-                  &ldquo;At Future Skills Institute, we believe that education is not
+                  &ldquo;At Z-TECH CAREER ACADEMY, we believe that education is not
                   just about acquiring knowledge — it is about developing the
                   skills, confidence, and mindset needed to thrive in
                   today&apos;s competitive world. Our mission has always been to
@@ -48,10 +48,10 @@ export default function DirectorMessage() {
                   community and take the first step toward a brighter future.
                 </p>
                 <div className="border-t border-gray-100 pt-4">
-                  <h4 className="text-navy font-bold text-lg">Dr. Rajesh Kumar</h4>
-                  <p className="text-text-gray text-sm">Founder & Director</p>
+                  <h4 className="text-navy font-bold text-lg">Vijay Kumar Singla</h4>
+                  <p className="text-text-gray text-sm">M.Com, MBA — Founder & Director</p>
                   <p className="text-navy-light text-sm font-medium">
-                    Future Skills Institute
+                    Z-TECH CAREER ACADEMY
                   </p>
                 </div>
               </div>

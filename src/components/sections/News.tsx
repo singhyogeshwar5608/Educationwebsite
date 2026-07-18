@@ -39,7 +39,7 @@ export default function News() {
             Latest News & Events
           </h2>
           <p className="text-text-gray text-lg max-w-xl mx-auto">
-            Stay updated with the latest happenings at Future Skills Institute.
+            Stay updated with the latest happenings at Z-TECH CAREER ACADEMY.
           </p>
         </div>
 

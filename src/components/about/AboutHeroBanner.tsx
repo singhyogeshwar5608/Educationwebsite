@@ -39,7 +39,7 @@ export default function AboutHeroBanner() {
           </h1>
           <p className="text-blue-200 text-lg leading-relaxed max-w-2xl mx-auto">
             Discover our story, our mission, and our commitment to shaping the
-            future of education. Learn what makes Future Skills Institute a
+            future of education. Learn what makes Z-TECH CAREER ACADEMY a
             trusted name in skill development.
           </p>
         </div>

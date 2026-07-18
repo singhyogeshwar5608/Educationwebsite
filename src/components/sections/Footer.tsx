@@ -46,7 +46,7 @@ export default function Footer() {
               </div>
               <div className="leading-tight">
                 <span className="text-white font-bold text-lg tracking-tight block">
-                  FUTURE SKILLS
+                  Z-TECH CAREER
                 </span>
                 <span className="text-blue-300 text-[10px] font-medium tracking-widest uppercase">
                   Institute
@@ -54,10 +54,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-blue-200/80 text-sm leading-relaxed mb-5">
-              We are committed to providing quality education and practical
-              training to help students achieve their dreams. Our goal is to
-              empower every student with the skills they need for a successful
-              career.
+              Z-TECH CAREER ACADEMY is a leading computer education institute in Kaithal, Haryana. Under the guidance of Vijay Kumar Singla (M.Com, MBA), we are committed to providing quality education and practical training to help students achieve their dreams.
             </p>
             <div className="flex items-center gap-3">
               <a href="#" className="w-9 h-9 bg-white/10 hover:bg-gold hover:text-navy rounded-lg flex items-center justify-center transition-all" aria-label="Facebook">
@@ -116,24 +113,30 @@ export default function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin className="w-4 h-4 text-gold shrink-0 mt-0.5" />
                 <span className="text-blue-200/80 text-sm">
-                  123 Education Street, Knowledge City, India - 110001
+                  Behind Jat School, Rishi Nagar,<br/>Gali No. 9, Kaithal, Haryana
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-gold shrink-0" />
-                <a href="tel:+919876543210" className="text-blue-200/80 hover:text-gold text-sm transition-colors">
-                  +91 98765 43210
+                <a href="tel:+919215052018" className="text-blue-200/80 hover:text-gold text-sm transition-colors">
+                  92150-52018
+                </a>
+              </li>
+              <li className="flex items-center gap-3">
+                <Phone className="w-4 h-4 text-gold shrink-0" />
+                <a href="tel:+918685825071" className="text-blue-200/80 hover:text-gold text-sm transition-colors">
+                  86858-25071
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-4 h-4 text-gold shrink-0" />
-                <a href="mailto:info@fsi.edu.in" className="text-blue-200/80 hover:text-gold text-sm transition-colors">
-                  info@fsi.edu.in
+                <a href="mailto:ztca2012@gmail.com" className="text-blue-200/80 hover:text-gold text-sm transition-colors">
+                  ztca2012@gmail.com
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Globe className="w-4 h-4 text-gold shrink-0" />
-                <span className="text-blue-200/80 text-sm">www.fsi.edu.in</span>
+                <span className="text-blue-200/80 text-sm">www.ztechacademy.in</span>
               </li>
             </ul>
 
@@ -168,10 +171,10 @@ export default function Footer() {
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-blue-200/60 text-sm">
-            &copy; 2025 Future Skills Institute. All Rights Reserved.
+            &copy; 2025 Z-TECH CAREER ACADEMY. All Rights Reserved.
           </p>
           <p className="text-blue-200/60 text-sm">
-            Designed with ❤️ for Education
+            Owner: Vijay Kumar Singla (M.Com, MBA)
           </p>
         </div>
       </div>

@@ -40,7 +40,7 @@ export default function WhyChooseUs() {
               We Provide The Best Learning Experience
             </h2>
             <p className="text-text-gray leading-relaxed mb-8">
-              At Future Skills Institute, we are committed to providing quality
+              At Z-TECH CAREER ACADEMY, we are committed to providing quality
               education and practical training to help students achieve their
               dreams. Our experienced trainers, modern infrastructure, and
               industry-focused curriculum make us the preferred choice for

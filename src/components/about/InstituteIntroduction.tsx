@@ -17,7 +17,7 @@ export default function InstituteIntroduction() {
             <div className="rounded-2xl overflow-hidden shadow-xl">
               <img
                 src="https://sfile.chatglm.cn/images-ppt/47b4f18a9587.jpg"
-                alt="Future Skills Institute campus building"
+                alt="Z-TECH CAREER ACADEMY campus building"
                 className="w-full h-[400px] object-cover"
               />
             </div>
@@ -35,10 +35,10 @@ export default function InstituteIntroduction() {
               Who We Are
             </span>
             <h2 className="text-3xl sm:text-4xl font-bold text-navy mt-2 mb-4">
-              Welcome to Future Skills Institute
+              Welcome to Z-TECH CAREER ACADEMY
             </h2>
             <p className="text-text-gray leading-relaxed mb-4">
-              Future Skills Institute is a leading computer education and
+              Z-TECH CAREER ACADEMY is a leading computer education and
               professional training center established with a vision to bridge
               the gap between academic learning and industry requirements.
               Founded in 2015, we have been empowering students with

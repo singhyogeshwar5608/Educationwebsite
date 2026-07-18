@@ -7,7 +7,7 @@ const testimonials = [
     role: "Web Developer",
     company: "TCS",
     rating: 5,
-    text: "The training and support I received at Future Skills Institute helped me to get placed in a top company. The practical approach to learning made me industry-ready from day one.",
+    text: "The training and support I received at Z-TECH CAREER ACADEMY helped me to get placed in a top company. The practical approach to learning made me industry-ready from day one.",
     image: "https://sfile.chatglm.cn/images-ppt/6cbb07f2ed04.jpg",
   },
   {

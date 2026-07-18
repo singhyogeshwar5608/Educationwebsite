@@ -5,7 +5,7 @@ const milestones = [
     year: "2015",
     title: "Foundation Year",
     description:
-      "Future Skills Institute was founded with a vision to provide quality computer education. Started with just 3 courses and a single classroom in Knowledge City.",
+      "Z-TECH CAREER ACADEMY was founded with a vision to provide quality computer education. Started with just 3 courses and a single classroom in Kaithal, Haryana.",
     icon: GraduationCap,
   },
   {

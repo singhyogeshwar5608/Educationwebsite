@@ -15,8 +15,9 @@ import {
 } from "lucide-react";
 
 const topBarInfo = {
-  phone: "+91 98765 43210",
-  email: "info@fsi.edu.in",
+  phone: "92150-52018",
+  phone2: "86858-25071",
+  email: "ztca2012@gmail.com",
 };
 
 const navItems = [
@@ -57,6 +58,13 @@ export default function Header() {
               <span className="hidden sm:inline">{topBarInfo.phone}</span>
             </a>
             <a
+              href={`tel:${topBarInfo.phone2}`}
+              className="flex items-center gap-1.5 hover:text-gold transition-colors"
+            >
+              <Phone className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">{topBarInfo.phone2}</span>
+            </a>
+            <a
               href={`mailto:${topBarInfo.email}`}
               className="flex items-center gap-1.5 hover:text-gold transition-colors"
             >
@@ -66,7 +74,7 @@ export default function Header() {
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden md:inline text-gold font-semibold text-xs tracking-wide uppercase">
-              Admissions Open 2025
+              Admissions Open 2025-26
             </span>
             <div className="flex items-center gap-2 ml-2">
               <a href="#" className="hover:text-gold transition-colors" aria-label="Facebook">
@@ -96,7 +104,7 @@ export default function Header() {
             </div>
             <div className="leading-tight">
               <span className="text-navy font-bold text-lg tracking-tight block">
-                FUTURE SKILLS
+                Z-TECH CAREER
               </span>
               <span className="text-navy-light text-[10px] font-medium tracking-widest uppercase">
                 Institute

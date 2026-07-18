@@ -19,13 +19,13 @@ export default function CTA() {
             </p>
             <div className="space-y-4 mb-8">
               <a
-                href="tel:+919876543210"
+                href="tel:+919215052018"
                 className="flex items-center gap-3 text-white hover:text-gold transition-colors"
               >
                 <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
                   <Phone className="w-5 h-5" />
                 </div>
-                <span>+91 98765 43210</span>
+                <span>92150-52018</span>
               </a>
               <a
                 href="#"
@@ -34,16 +34,16 @@ export default function CTA() {
                 <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
                   <MessageCircle className="w-5 h-5" />
                 </div>
-                <span>WhatsApp: +91 98765 43210</span>
+                <span>WhatsApp: 86858-25071</span>
               </a>
               <a
-                href="mailto:info@fsi.edu.in"
+                href="mailto:ztca2012@gmail.com"
                 className="flex items-center gap-3 text-white hover:text-gold transition-colors"
               >
                 <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center">
                   <Mail className="w-5 h-5" />
                 </div>
-                <span>info@fsi.edu.in</span>
+                <span>ztca2012@gmail.com</span>
               </a>
             </div>
             <a

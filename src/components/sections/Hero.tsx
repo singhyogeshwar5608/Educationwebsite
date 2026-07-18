@@ -23,7 +23,7 @@ export default function Hero() {
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 bg-navy/10 text-navy text-sm font-semibold px-4 py-1.5 rounded-full mb-6">
               <span className="w-2 h-2 bg-gold rounded-full animate-pulse" />
-              Admissions Open 2025
+              Admissions Open 2025-26
             </div>
             <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold text-navy leading-tight mb-6">
               Learn Today,{" "}
@@ -71,7 +71,7 @@ export default function Hero() {
               <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl">
                 <img
                   src="https://sfile.chatglm.cn/images-ppt/85b1aa8bc748.jpg"
-                  alt="Happy students learning together at Future Skills Institute"
+                  alt="Happy students learning together at Z-TECH CAREER ACADEMY"
                   className="w-full h-[420px] object-cover"
                 />
               </div>

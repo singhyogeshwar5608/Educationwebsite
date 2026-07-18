@@ -1,0 +1,756 @@
+     1→import { useState, useMemo, useCallback } from 'react'
+     2→import {
+     3→  UserPlus,
+     4→  Eye,
+     5→  CheckCircle,
+     6→  XCircle,
+     7→  Search,
+     8→  Info,
+     9→  BookOpen,
+    10→  CalendarDays,
+    11→  Hash,
+    12→  User,
+    13→  Mail,
+    14→  Phone,
+    15→  MapPin,
+    16→  GraduationCap,
+    17→  AlertCircle,
+    18→} from 'lucide-react'
+    19→import {
+    20→  mockAdmissions,
+    21→  mockCourses,
+    22→  getCourseDetails,
+    23→} from '@/data/mockData'
+    24→import type { AdmissionRequest, Course } from '@/data/mockData'
+    25→
+    26→// ─── Status badge helper ───────────────────────────────────
+    27→function AdmissionStatusBadge({ status }: { status: AdmissionRequest['status'] }) {
+    28→  if (status === 'Pending') return <span className="badge-warning">Pending</span>
+    29→  if (status === 'Approved') return <span className="badge-success">Approved</span>
+    30→  return <span className="badge-danger">Rejected</span>
+    31→}
+    32→
+    33→// ─── Form data type ────────────────────────────────────────
+    34→interface ManualFormData {
+    35→  studentName: string
+    36→  fatherName: string
+    37→  motherName: string
+    38→  dob: string
+    39→  gender: string
+    40→  mobile: string
+    41→  email: string
+    42→  address: string
+    43→  courseId: string
+    44→  batch: string
+    45→  admissionDate: string
+    46→}
+    47→
+    48→const initialFormData: ManualFormData = {
+    49→  studentName: '',
+    50→  fatherName: '',
+    51→  motherName: '',
+    52→  dob: '',
+    53→  gender: '',
+    54→  mobile: '',
+    55→  email: '',
+    56→  address: '',
+    57→  courseId: '',
+    58→  batch: '',
+    59→  admissionDate: '',
+    60→}
+    61→
+    62→// ─── Admissions Component ──────────────────────────────────
+    63→function Admissions() {
+    64→  const [activeTab, setActiveTab] = useState<'online' | 'manual'>('online')
+    65→  const [searchTerm, setSearchTerm] = useState('')
+    66→  const [admissions, setAdmissions] = useState<AdmissionRequest[]>(mockAdmissions)
+    67→  const [selectedAdmission, setSelectedAdmission] = useState<AdmissionRequest | null>(null)
+    68→  const [showModal, setShowModal] = useState(false)
+    69→  const [formData, setFormData] = useState<ManualFormData>(initialFormData)
+    70→  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
+    71→  const [showSuccess, setShowSuccess] = useState(false)
+    72→
+    73→  // Filtered admissions for search
+    74→  const filteredAdmissions = useMemo(() => {
+    75→    if (!searchTerm.trim()) return admissions
+    76→    const lower = searchTerm.toLowerCase()
+    77→    return admissions.filter(
+    78→      (a) =>
+    79→        a.studentName.toLowerCase().includes(lower) ||
+    80→        a.email.toLowerCase().includes(lower) ||
+    81→        a.mobile.includes(searchTerm) ||
+    82→        a.course.toLowerCase().includes(lower),
+    83→    )
+    84→  }, [admissions, searchTerm])
+    85→
+    86→  const pendingCount = useMemo(
+    87→    () => admissions.filter((a) => a.status === 'Pending').length,
+    88→    [admissions],
+    89→  )
+    90→
+    91→  // Auto-generated registration & roll numbers
+    92→  const regNo = useMemo(() => {
+    93→    if (!selectedCourse || !formData.admissionDate) return '—'
+    94→    const year = new Date(formData.admissionDate).getFullYear()
+    95→    const seq = String(admissions.length + 1).padStart(3, '0')
+    96→    return `REG${year}${seq}`
+    97→  }, [selectedCourse, formData.admissionDate, admissions.length])
+    98→
+    99→  const rollNo = useMemo(() => {
+   100→    if (!selectedCourse) return '—'
+   101→    const code = selectedCourse.code
+   102→    const seq = String(admissions.length + 1).padStart(3, '0')
+   103→    return `${code}${seq}`
+   104→  }, [selectedCourse, admissions.length])
+   105→
+   106→  // Handle course selection → auto-fill info box
+   107→  const handleCourseChange = useCallback((courseId: string) => {
+   108→    const course = getCourseDetails(courseId) || null
+   109→    setSelectedCourse(course)
+   110→    setFormData((prev) => ({ ...prev, courseId }))
+   111→  }, [])
+   112→
+   113→  // Handle approve / reject
+   114→  const handleStatusChange = useCallback((id: string, newStatus: 'Approved' | 'Rejected') => {
+   115→    setAdmissions((prev) =>
+   116→      prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a)),
+   117→    )
+   118→    if (selectedAdmission?.id === id) {
+   119→      setSelectedAdmission((prev) => (prev ? { ...prev, status: newStatus } : null))
+   120→    }
+   121→  }, [selectedAdmission])
+   122→
+   123→  // Open view modal
+   124→  const openView = useCallback((admission: AdmissionRequest) => {
+   125→    setSelectedAdmission(admission)
+   126→    setShowModal(true)
+   127→  }, [])
+   128→
+   129→  // Close modal
+   130→  const closeModal = useCallback(() => {
+   131→    setShowModal(false)
+   132→    setSelectedAdmission(null)
+   133→  }, [])
+   134→
+   135→  // Form field change
+   136→  const updateField = useCallback((field: keyof ManualFormData, value: string) => {
+   137→    setFormData((prev) => ({ ...prev, [field]: value }))
+   138→  }, [])
+   139→
+   140→  // Submit manual admission
+   141→  const handleSubmit = useCallback((e: React.FormEvent) => {
+   142→    e.preventDefault()
+   143→    setShowSuccess(true)
+   144→    setTimeout(() => {
+   145→      setShowSuccess(false)
+   146→      setFormData(initialFormData)
+   147→      setSelectedCourse(null)
+   148→    }, 3000)
+   149→  }, [])
+   150→
+   151→  return (
+   152→    <div className="space-y-6">
+   153→      {/* ═══ Search Bar ═══ */}
+   154→      <div className="relative">
+   155→        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-gray" />
+   156→        <input
+   157→          type="text"
+   158→          placeholder="Search by name, email, mobile, or course..."
+   159→          className="form-input pl-10"
+   160→          value={searchTerm}
+   161→          onChange={(e) => setSearchTerm(e.target.value)}
+   162→        />
+   163→      </div>
+   164→
+   165→      {/* ═══ Tab Buttons ═══ */}
+   166→      <div className="flex gap-2">
+   167→        <button
+   168→          onClick={() => setActiveTab('online')}
+   169→          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+   170→            activeTab === 'online'
+   171→              ? 'bg-navy text-white shadow-md'
+   172→              : 'bg-white text-text-gray border border-border-light hover:bg-light-gray'
+   173→          }`}
+   174→        >
+   175→          <UserPlus className="w-4 h-4" />
+   176→          Online Requests
+   177→          {pendingCount > 0 && (
+   178→            <span
+   179→              className={`inline-flex items-center justify-center min-w-[20px] h-5 rounded-full text-[10px] font-bold px-1.5 ${
+   180→                activeTab === 'online'
+   181→                  ? 'bg-gold text-navy'
+   182→                  : 'bg-orange-100 text-orange-700'
+   183→              }`}
+   184→            >
+   185→              {pendingCount}
+   186→            </span>
+   187→          )}
+   188→        </button>
+   189→        <button
+   190→          onClick={() => setActiveTab('manual')}
+   191→          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+   192→            activeTab === 'manual'
+   193→              ? 'bg-navy text-white shadow-md'
+   194→              : 'bg-white text-text-gray border border-border-light hover:bg-light-gray'
+   195→          }`}
+   196→        >
+   197→          <GraduationCap className="w-4 h-4" />
+   198→          Manual Admission
+   199→        </button>
+   200→      </div>
+   201→
+   202→      {/* ═══ Tab Content ═══ */}
+   203→      <div key={activeTab} className="animate-fade-in">
+   204→        {/* ─── Tab 1: Online Admission Requests ─── */}
+   205→        {activeTab === 'online' && (
+   206→          <div className="page-card">
+   207→            <div className="p-4 sm:p-6 border-b border-border-light">
+   208→              <h3 className="font-bold text-navy">Online Admission Requests</h3>
+   209→              <p className="text-xs text-text-gray mt-1">
+   210→                Review and manage incoming admission applications
+   211→              </p>
+   212→            </div>
+   213→            <div className="overflow-x-auto">
+   214→              <table className="data-table">
+   215→                <thead>
+   216→                  <tr>
+   217→                    <th>Student Name</th>
+   218→                    <th>Email</th>
+   219→                    <th>Mobile</th>
+   220→                    <th>Course</th>
+   221→                    <th>Applied Date</th>
+   222→                    <th>Status</th>
+   223→                    <th>Actions</th>
+   224→                  </tr>
+   225→                </thead>
+   226→                <tbody>
+   227→                  {filteredAdmissions.map((a) => (
+   228→                    <tr key={a.id}>
+   229→                      <td className="font-medium text-navy whitespace-nowrap">
+   230→                        {a.studentName}
+   231→                      </td>
+   232→                      <td className="whitespace-nowrap text-text-gray">{a.email}</td>
+   233→                      <td className="whitespace-nowrap">{a.mobile}</td>
+   234→                      <td className="whitespace-nowrap">{a.course}</td>
+   235→                      <td className="whitespace-nowrap text-text-gray">
+   236→                        {new Date(a.appliedDate).toLocaleDateString('en-IN', {
+   237→                          day: '2-digit',
+   238→                          month: 'short',
+   239→                          year: '2-digit',
+   240→                        })}
+   241→                      </td>
+   242→                      <td>
+   243→                        <AdmissionStatusBadge status={a.status} />
+   244→                      </td>
+   245→                      <td>
+   246→                        <div className="flex items-center gap-1.5">
+   247→                          <button
+   248→                            onClick={() => openView(a)}
+   249→                            className="p-1.5 rounded-lg text-text-gray hover:bg-light-gray hover:text-navy transition-colors"
+   250→                            title="View Details"
+   251→                          >
+   252→                            <Eye className="w-4 h-4" />
+   253→                          </button>
+   254→                          {a.status === 'Pending' && (
+   255→                            <>
+   256→                              <button
+   257→                                onClick={() => handleStatusChange(a.id, 'Approved')}
+   258→                                className="p-1.5 rounded-lg text-green hover:bg-green/10 transition-colors"
+   259→                                title="Approve"
+   260→                              >
+   261→                                <CheckCircle className="w-4 h-4" />
+   262→                              </button>
+   263→                              <button
+   264→                                onClick={() => handleStatusChange(a.id, 'Rejected')}
+   265→                                className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
+   266→                                title="Reject"
+   267→                              >
+   268→                                <XCircle className="w-4 h-4" />
+   269→                              </button>
+   270→                            </>
+   271→                          )}
+   272→                        </div>
+   273→                      </td>
+   274→                    </tr>
+   275→                  ))}
+   276→                  {filteredAdmissions.length === 0 && (
+   277→                    <tr>
+   278→                      <td colSpan={7} className="text-center py-8 text-text-gray">
+   279→                        <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-40" />
+   280→                        <p className="text-sm">No admission requests found</p>
+   281→                      </td>
+   282→                    </tr>
+   283→                  )}
+   284→                </tbody>
+   285→              </table>
+   286→            </div>
+   287→          </div>
+   288→        )}
+   289→
+   290→        {/* ─── Tab 2: Manual Admission ─── */}
+   291→        {activeTab === 'manual' && (
+   292→          <div className="page-card">
+   293→            <div className="p-4 sm:p-6 border-b border-border-light">
+   294→              <h3 className="font-bold text-navy">Manual Admission</h3>
+   295→              <p className="text-xs text-text-gray mt-1">
+   296→                Enroll a student directly into a course
+   297→              </p>
+   298→            </div>
+   299→            <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+   300→              {/* Row 1: Student Name, Father's Name, Mother's Name */}
+   301→              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+   302→                <div>
+   303→                  <label className="form-label">
+   304→                    Student Name <span className="text-red-500">*</span>
+   305→                  </label>
+   306→                  <div className="relative">
+   307→                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-gray" />
+   308→                    <input
+   309→                      type="text"
+   310→                      className="form-input pl-10"
+   311→                      placeholder="Enter student name"
+   312→                      value={formData.studentName}
+   313→                      onChange={(e) => updateField('studentName', e.target.value)}
+   314→                      required
+   315→                    />
+   316→                  </div>
+   317→                </div>
+   318→                <div>
+   319→                  <label className="form-label">
+   320→                    Father&apos;s Name <span className="text-red-500">*</span>
+   321→                  </label>
+   322→                  <input
+   323→                    type="text"
+   324→                    className="form-input"
+   325→                    placeholder="Enter father's name"
+   326→                    value={formData.fatherName}
+   327→                    onChange={(e) => updateField('fatherName', e.target.value)}
+   328→                    required
+   329→                  />
+   330→                </div>
+   331→                <div>
+   332→                  <label className="form-label">Mother&apos;s Name</label>
+   333→                  <input
+   334→                    type="text"
+   335→                    className="form-input"
+   336→                    placeholder="Enter mother's name"
+   337→                    value={formData.motherName}
+   338→                    onChange={(e) => updateField('motherName', e.target.value)}
+   339→                  />
+   340→                </div>
+   341→              </div>
+   342→
+   343→              {/* Row 2: DOB, Gender, Mobile */}
+   344→              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+   345→                <div>
+   346→                  <label className="form-label">
+   347→                    Date of Birth <span className="text-red-500">*</span>
+   348→                  </label>
+   349→                  <div className="relative">
+   350→                    <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-gray" />
+   351→                    <input
+   352→                      type="date"
+   353→                      className="form-input pl-10"
+   354→                      value={formData.dob}
+   355→                      onChange={(e) => updateField('dob', e.target.value)}
+   356→                      required
+   357→                    />
+   358→                  </div>
+   359→                </div>
+   360→                <div>
+   361→                  <label className="form-label">
+   362→                    Gender <span className="text-red-500">*</span>
+   363→                  </label>
+   364→                  <select
+   365→                    className="form-select"
+   366→                    value={formData.gender}
+   367→                    onChange={(e) => updateField('gender', e.target.value)}
+   368→                    required
+   369→                  >
+   370→                    <option value="">Select Gender</option>
+   371→                    <option value="Male">Male</option>
+   372→                    <option value="Female">Female</option>
+   373→                    <option value="Other">Other</option>
+   374→                  </select>
+   375→                </div>
+   376→                <div>
+   377→                  <label className="form-label">
+   378→                    Mobile <span className="text-red-500">*</span>
+   379→                  </label>
+   380→                  <div className="relative">
+   381→                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-gray" />
+   382→                    <input
+   383→                      type="tel"
+   384→                      className="form-input pl-10"
+   385→                      placeholder="Enter mobile number"
+   386→                      value={formData.mobile}
+   387→                      onChange={(e) => updateField('mobile', e.target.value)}
+   388→                      required
+   389→                    />
+   390→                  </div>
+   391→                </div>
+   392→              </div>
+   393→
+   394→              {/* Row 3: Email, Address */}
+   395→              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+   396→                <div>
+   397→                  <label className="form-label">Email</label>
+   398→                  <div className="relative">
+   399→                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-gray" />
+   400→                    <input
+   401→                      type="email"
+   402→                      className="form-input pl-10"
+   403→                      placeholder="Enter email address"
+   404→                      value={formData.email}
+   405→                      onChange={(e) => updateField('email', e.target.value)}
+   406→                    />
+   407→                  </div>
+   408→                </div>
+   409→                <div className="md:col-span-2">
+   410→                  <label className="form-label">Address</label>
+   411→                  <div className="relative">
+   412→                    <MapPin className="absolute left-3 top-3 w-4 h-4 text-text-gray" />
+   413→                    <textarea
+   414→                      className="form-input pl-10 min-h-[42px] resize-y"
+   415→                      placeholder="Enter full address"
+   416→                      rows={2}
+   417→                      value={formData.address}
+   418→                      onChange={(e) => updateField('address', e.target.value)}
+   419→                    />
+   420→                  </div>
+   421→                </div>
+   422→              </div>
+   423→
+   424→              {/* Row 4: Course, Batch */}
+   425→              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+   426→                <div>
+   427→                  <label className="form-label">
+   428→                    Course <span className="text-red-500">*</span>
+   429→                  </label>
+   430→                  <div className="relative">
+   431→                    <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-gray pointer-events-none" />
+   432→                    <select
+   433→                      className="form-select pl-10"
+   434→                      value={formData.courseId}
+   435→                      onChange={(e) => handleCourseChange(e.target.value)}
+   436→                      required
+   437→                    >
+   438→                      <option value="">Select Course</option>
+   439→                      {mockCourses.map((c) => (
+   440→                        <option key={c.id} value={c.id}>
+   441→                          {c.name} ({c.code})
+   442→                        </option>
+   443→                      ))}
+   444→                    </select>
+   445→                  </div>
+   446→                </div>
+   447→                <div>
+   448→                  <label className="form-label">
+   449→                    Batch <span className="text-red-500">*</span>
+   450→                  </label>
+   451→                  <input
+   452→                    type="text"
+   453→                    className="form-input"
+   454→                    placeholder="e.g. 2024-2025"
+   455→                    value={formData.batch}
+   456→                    onChange={(e) => updateField('batch', e.target.value)}
+   457→                    required
+   458→                  />
+   459→                </div>
+   460→                <div />
+   461→              </div>
+   462→
+   463→              {/* Course Info Box (auto-filled when course selected) */}
+   464→              {selectedCourse && (
+   465→                <div className="mb-4 rounded-xl border-2 border-navy/10 bg-navy/[0.03] p-4 animate-fade-in">
+   466→                  <div className="flex items-center gap-2 mb-3">
+   467→                    <Info className="w-4 h-4 text-navy" />
+   468→                    <h4 className="font-bold text-navy text-sm">
+   469→                      Course Details: {selectedCourse.name}
+   470→                    </h4>
+   471→                  </div>
+   472→                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+   473→                    <div className="bg-white rounded-lg p-2.5 border border-border-light">
+   474→                      <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold">
+   475→                        Duration
+   476→                      </p>
+   477→                      <p className="text-sm font-bold text-navy">
+   478→                        {selectedCourse.duration}
+   479→                      </p>
+   480→                    </div>
+   481→                    <div className="bg-white rounded-lg p-2.5 border border-border-light">
+   482→                      <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold">
+   483→                        Course Fee
+   484→                      </p>
+   485→                      <p className="text-sm font-bold text-navy">
+   486→                        ₹{selectedCourse.courseFee.toLocaleString('en-IN')}
+   487→                      </p>
+   488→                    </div>
+   489→                    <div className="bg-white rounded-lg p-2.5 border border-border-light">
+   490→                      <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold">
+   491→                        Registration Fee
+   492→                      </p>
+   493→                      <p className="text-sm font-bold text-navy">
+   494→                        ₹{selectedCourse.registrationFee.toLocaleString('en-IN')}
+   495→                      </p>
+   496→                    </div>
+   497→                    <div className="bg-white rounded-lg p-2.5 border border-border-light">
+   498→                      <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold">
+   499→                        Eligibility
+   500→                      </p>
+   501→                      <p className="text-sm font-bold text-navy">
+   502→                        {selectedCourse.eligibility}
+   503→                      </p>
+   504→                    </div>
+   505→                  </div>
+   506→                  <div>
+   507→                    <p className="text-xs font-semibold text-navy mb-2">
+   508→                      Subjects to be enrolled:
+   509→                    </p>
+   510→                    <div className="flex flex-wrap gap-2">
+   511→                      {selectedCourse.subjects.map((sub) => (
+   512→                        <span
+   513→                          key={sub.id}
+   514→                          className="inline-flex items-center gap-1 bg-white border border-border-light rounded-lg px-2.5 py-1 text-xs font-medium text-navy"
+   515→                        >
+   516→                          <BookOpen className="w-3 h-3 text-gold" />
+   517→                          {sub.name}
+   518→                        </span>
+   519→                      ))}
+   520→                    </div>
+   521→                  </div>
+   522→                </div>
+   523→              )}
+   524→
+   525→              {/* Row 5: Admission Date, Registration No, Roll No */}
+   526→              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+   527→                <div>
+   528→                  <label className="form-label">
+   529→                    Admission Date <span className="text-red-500">*</span>
+   530→                  </label>
+   531→                  <div className="relative">
+   532→                    <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-gray" />
+   533→                    <input
+   534→                      type="date"
+   535→                      className="form-input pl-10"
+   536→                      value={formData.admissionDate}
+   537→                      onChange={(e) => updateField('admissionDate', e.target.value)}
+   538→                      required
+   539→                    />
+   540→                  </div>
+   541→                </div>
+   542→                <div>
+   543→                  <label className="form-label">Registration No</label>
+   544→                  <div className="relative">
+   545→                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-gray" />
+   546→                    <input
+   547→                      type="text"
+   548→                      className="form-input pl-10 bg-light-gray cursor-not-allowed"
+   549→                      value={regNo}
+   550→                      readOnly
+   551→                    />
+   552→                  </div>
+   553→                  <p className="text-[10px] text-text-gray mt-1">Auto-generated</p>
+   554→                </div>
+   555→                <div>
+   556→                  <label className="form-label">Roll No</label>
+   557→                  <div className="relative">
+   558→                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-gray" />
+   559→                    <input
+   560→                      type="text"
+   561→                      className="form-input pl-10 bg-light-gray cursor-not-allowed"
+   562→                      value={rollNo}
+   563→                      readOnly
+   564→                    />
+   565→                  </div>
+   566→                  <p className="text-[10px] text-text-gray mt-1">Auto-generated</p>
+   567→                </div>
+   568→              </div>
+   569→
+   570→              {/* Submit Button */}
+   571→              <div className="flex items-center gap-4">
+   572→                <button type="submit" className="btn-gold py-3 px-8 text-sm rounded-xl">
+   573→                  <GraduationCap className="w-4 h-4" />
+   574→                  Enroll Student
+   575→                </button>
+   576→              </div>
+   577→
+   578→              {/* Success Toast */}
+   579→              {showSuccess && (
+   580→                <div className="mt-4 flex items-center gap-3 bg-green/10 border border-green/20 rounded-xl p-4 animate-fade-in">
+   581→                  <CheckCircle className="w-5 h-5 text-green flex-shrink-0" />
+   582→                  <div>
+   583→                    <p className="text-sm font-bold text-navy">
+   584→                      Student Enrolled Successfully!
+   585→                    </p>
+   586→                    <p className="text-xs text-text-gray">
+   587→                      {formData.studentName} has been enrolled in{' '}
+   588→                      {selectedCourse?.name || 'the selected course'}
+   589→                    </p>
+   590→                  </div>
+   591→                </div>
+   592→              )}
+   593→            </form>
+   594→          </div>
+   595→        )}
+   596→      </div>
+   597→
+   598→      {/* ═══ View Details Modal ═══ */}
+   599→      {showModal && selectedAdmission && (
+   600→        <div
+   601→          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+   602→          onClick={closeModal}
+   603→        >
+   604→          {/* Backdrop */}
+   605→          <div className="absolute inset-0 bg-black/50 animate-fade-in" />
+   606→
+   607→          {/* Modal Content */}
+   608→          <div
+   609→            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-fade-in"
+   610→            onClick={(e) => e.stopPropagation()}
+   611→          >
+   612→            {/* Modal Header */}
+   613→            <div className="sticky top-0 bg-white border-b border-border-light p-4 sm:p-6 rounded-t-2xl">
+   614→              <div className="flex items-center justify-between">
+   615→                <h3 className="font-bold text-navy text-lg">
+   616→                  Admission Details
+   617→                </h3>
+   618→                <button
+   619→                  onClick={closeModal}
+   620→                  className="p-1.5 rounded-lg text-text-gray hover:bg-light-gray transition-colors"
+   621→                  aria-label="Close modal"
+   622→                >
+   623→                  <XCircle className="w-5 h-5" />
+   624→                </button>
+   625→              </div>
+   626→            </div>
+   627→
+   628→            {/* Modal Body */}
+   629→            <div className="p-4 sm:p-6 space-y-4">
+   630→              {/* Student info grid */}
+   631→              <div className="grid grid-cols-2 gap-4">
+   632→                <div>
+   633→                  <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold mb-0.5">
+   634→                    Student Name
+   635→                  </p>
+   636→                  <p className="text-sm font-semibold text-navy">
+   637→                    {selectedAdmission.studentName}
+   638→                  </p>
+   639→                </div>
+   640→                <div>
+   641→                  <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold mb-0.5">
+   642→                    Father Name
+   643→                  </p>
+   644→                  <p className="text-sm font-semibold text-navy">
+   645→                    {selectedAdmission.fatherName}
+   646→                  </p>
+   647→                </div>
+   648→                <div>
+   649→                  <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold mb-0.5">
+   650→                    Date of Birth
+   651→                  </p>
+   652→                  <p className="text-sm font-semibold text-navy">
+   653→                    {new Date(selectedAdmission.dob).toLocaleDateString('en-IN', {
+   654→                      day: '2-digit',
+   655→                      month: 'long',
+   656→                      year: 'numeric',
+   657→                    })}
+   658→                  </p>
+   659→                </div>
+   660→                <div>
+   661→                  <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold mb-0.5">
+   662→                    Email
+   663→                  </p>
+   664→                  <p className="text-sm font-semibold text-navy break-all">
+   665→                    {selectedAdmission.email}
+   666→                  </p>
+   667→                </div>
+   668→                <div>
+   669→                  <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold mb-0.5">
+   670→                    Mobile
+   671→                  </p>
+   672→                  <p className="text-sm font-semibold text-navy">
+   673→                    {selectedAdmission.mobile}
+   674→                  </p>
+   675→                </div>
+   676→                <div>
+   677→                  <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold mb-0.5">
+   678→                    Applied Date
+   679→                  </p>
+   680→                  <p className="text-sm font-semibold text-navy">
+   681→                    {new Date(selectedAdmission.appliedDate).toLocaleDateString('en-IN', {
+   682→                      day: '2-digit',
+   683→                      month: 'long',
+   684→                      year: 'numeric',
+   685→                    })}
+   686→                  </p>
+   687→                </div>
+   688→                <div>
+   689→                  <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold mb-0.5">
+   690→                    Course
+   691→                  </p>
+   692→                  <p className="text-sm font-semibold text-navy">
+   693→                    {selectedAdmission.course}
+   694→                  </p>
+   695→                </div>
+   696→                <div>
+   697→                  <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold mb-0.5">
+   698→                    Status
+   699→                  </p>
+   700→                  <AdmissionStatusBadge status={selectedAdmission.status} />
+   701→                </div>
+   702→              </div>
+   703→
+   704→              {/* Address */}
+   705→              <div>
+   706→                <p className="text-[10px] uppercase tracking-wide text-text-gray font-semibold mb-0.5">
+   707→                  Address
+   708→                </p>
+   709→                <p className="text-sm font-semibold text-navy">
+   710→                  {selectedAdmission.address}
+   711→                </p>
+   712→              </div>
+   713→            </div>
+   714→
+   715→            {/* Modal Footer */}
+   716→            {selectedAdmission.status === 'Pending' && (
+   717→              <div className="sticky bottom-0 bg-white border-t border-border-light p-4 sm:p-6 rounded-b-2xl flex items-center justify-end gap-3">
+   718→                <button
+   719→                  onClick={() => {
+   720→                    handleStatusChange(selectedAdmission.id, 'Rejected')
+   721→                    closeModal()
+   722→                  }}
+   723→                  className="btn-danger py-2.5 px-5 text-sm rounded-xl"
+   724→                >
+   725→                  <XCircle className="w-4 h-4" />
+   726→                  Reject
+   727→                </button>
+   728→                <button
+   729→                  onClick={() => {
+   730→                    handleStatusChange(selectedAdmission.id, 'Approved')
+   731→                    closeModal()
+   732→                  }}
+   733→                  className="btn-gold py-2.5 px-5 text-sm rounded-xl"
+   734→                  style={{ background: '#28A745', color: '#ffffff' }}
+   735→                >
+   736→                  <CheckCircle className="w-4 h-4" />
+   737→                  Approve
+   738→                </button>
+   739→              </div>
+   740→            )}
+   741→            {selectedAdmission.status !== 'Pending' && (
+   742→              <div className="sticky bottom-0 bg-white border-t border-border-light p-4 sm:p-6 rounded-b-2xl flex items-center justify-end">
+   743→                <button onClick={closeModal} className="btn-outline py-2.5 px-5 text-sm rounded-xl">
+   744→                  Close
+   745→                </button>
+   746→              </div>
+   747→            )}
+   748→          </div>
+   749→        </div>
+   750→      )}
+   751→    </div>
+   752→  )
+   753→}
+   754→
+   755→export default Admissions
+   756→

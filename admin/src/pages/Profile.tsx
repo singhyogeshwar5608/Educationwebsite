@@ -1,0 +1,4 @@
+function Profile() {
+  return <div className="page-card p-6"><h2 className="text-xl font-bold text-navy">Profile</h2><p className="text-text-gray mt-2">Profile content coming soon...</p></div>
+}
+export default Profile

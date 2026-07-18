@@ -32,73 +32,75 @@ function buildCertificateHTML(
 <head>
 <meta charset="UTF-8">
 <style>
-  @page { size: 595.28px 841.89px; margin: 0; }
+  @page { size: 595.28pt 841.89pt; margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; width: 595.28px; height: 841.89px; }
-  .cp { position: relative; width: 595.28px; height: 841.89px; overflow: hidden; font-family: 'DejaVu Serif', Georgia, 'Times New Roman', serif; }
-  .bg { position: absolute; top: 0; left: 0; width: 595.28px; height: 841.89px; z-index: 0; }
+  html, body { margin: 0; padding: 0; width: 595.28pt; height: 841.89pt; }
+  .cp { position: relative; width: 595.28pt; height: 841.89pt; overflow: hidden; font-family: 'DejaVu Serif', Georgia, 'Times New Roman', serif; }
+  .bg { position: absolute; top: 0; left: 0; width: 595.28pt; height: 841.89pt; z-index: 0; }
 
   /* Watermark overlay */
-  .wm { position: absolute; top: 0; left: 0; width: 595.28px; height: 841.89px; z-index: 1; pointer-events: none; overflow: hidden; }
+  .wm { position: absolute; top: 0; left: 0; width: 595.28pt; height: 841.89pt; z-index: 1; pointer-events: none; overflow: hidden; }
   .wm-text {
     position: absolute;
-    left: -60px;
-    width: 750px;
-    font-size: 40px;
+    left: -60pt;
+    width: 750pt;
+    font-size: 40pt;
     font-weight: 800;
     color: rgba(10, 38, 71, 0.035);
     transform: rotate(-35deg);
     transform-origin: center center;
     white-space: nowrap;
-    letter-spacing: 8px;
+    letter-spacing: 8pt;
     text-align: center;
-    line-height: 80px;
+    line-height: 80pt;
     font-family: 'DejaVu Serif', Georgia, serif;
   }
 
-  /* Dynamic text fields — exact positions from PDF extraction (PyMuPDF) */
+  /* Dynamic text fields — exact positions from PDF extraction (PyMuPDF)
+     Using PT units so Playwright's pdf() renders them at the exact same coordinates.
+     Original PDF uses DejaVu Serif Condensed Bold at 9pt/11pt. */
   .f { position: absolute; z-index: 10; color: #000000; font-weight: bold; line-height: 1.2; white-space: nowrap; }
   .s9 { font-size: 9pt; }
   .s11 { font-size: 11pt; }
 
-  /* Row 1: Info table fields — y≈243.7pt */
-  .c1 { left: 60.7px; top: 243.7px; }   /* Centre Code */
-  .c2 { left: 168.8px; top: 243.7px; }  /* Session */
-  .c3 { left: 261.7px; top: 243.7px; }  /* Enrollment No */
-  .c4 { left: 388.9px; top: 243.7px; }  /* Roll No */
-  .c5 { left: 484.1px; top: 243.7px; }  /* Serial No */
+  /* Row 1: Info table fields — y=243.7pt */
+  .c1 { left: 60.7pt; top: 243.7pt; }   /* Centre Code */
+  .c2 { left: 168.8pt; top: 243.7pt; }  /* Session */
+  .c3 { left: 261.7pt; top: 243.7pt; }  /* Enrollment No */
+  .c4 { left: 388.9pt; top: 243.7pt; }  /* Roll No */
+  .c5 { left: 484.1pt; top: 243.7pt; }  /* Serial No */
 
-  /* Student Photo — left=248.8, top=281.7, 96×124.5 pts */
-  .ph { position: absolute; z-index: 10; left: 248.8px; top: 281.7px; width: 96px; height: 124.5px; object-fit: cover; border: 1.5px solid #0056A0; border-radius: 1px; background: #fff; }
+  /* Student Photo — left=248.8pt, top=281.7pt, 96×124.5pt */
+  .ph { position: absolute; z-index: 10; left: 248.8pt; top: 281.7pt; width: 96pt; height: 124.5pt; object-fit: cover; border: 1.5pt solid #0056A0; border-radius: 1pt; background: #fff; }
 
-  /* Row 2: Student Name | DOB — y≈472pt */
-  .c6 { left: 290px; top: 472px; }       /* Student Name */
-  .c7 { left: 488px; top: 472px; }       /* DOB */
+  /* Row 2: Student Name | DOB — y=472pt */
+  .c6 { left: 290pt; top: 472pt; }       /* Student Name */
+  .c7 { left: 488pt; top: 472pt; }       /* DOB */
 
-  /* Row 3: Father's Name | Mother's Name — y≈497.3pt */
-  .c8 { left: 167.8px; top: 497.3px; }  /* Father's Name */
-  .c9 { left: 438.4px; top: 497.3px; }  /* Mother's Name */
+  /* Row 3: Father's Name | Mother's Name — y=497.3pt */
+  .c8 { left: 167.8pt; top: 497.3pt; }  /* Father's Name */
+  .c9 { left: 438.4pt; top: 497.3pt; }  /* Mother's Name */
 
-  /* Row 4: Course Name — y≈522.5pt */
-  .c10 { left: 246.3px; top: 522.5px; text-align: center; } /* Course Name */
+  /* Row 4: Course Name — y=522.5pt — left-aligned like original */
+  .c10 { left: 246.3pt; top: 522.5pt; } /* Course Name */
 
-  /* Row 5: Duration | From | To — y≈545.2pt */
-  .c11 { left: 201.1px; top: 545.2px; } /* Duration */
-  .c12 { left: 375.1px; top: 545.2px; } /* From */
-  .c13 { left: 491.4px; top: 545.2px; } /* To */
+  /* Row 5: Duration | From | To — y=545.2pt */
+  .c11 { left: 201.1pt; top: 545.2pt; } /* Duration */
+  .c12 { left: 375.1pt; top: 545.2pt; } /* From */
+  .c13 { left: 491.4pt; top: 545.2pt; } /* To */
 
-  /* Row 6: Completion/Exam Date — y≈569.7pt */
-  .c14 { left: 470.7px; top: 569.7px; } /* Exam Date */
+  /* Row 6: Completion/Exam Date — y=569.7pt */
+  .c14 { left: 470.7pt; top: 569.7pt; } /* Exam Date */
 
-  /* Row 7: Institute/Study Centre — y≈594.1pt */
-  .c15 { left: 298.1px; top: 594.1px; text-align: center; width: 260px; } /* Institute Name */
+  /* Row 7: Institute/Study Centre — y=594.1pt — left-aligned, no text-align center */
+  .c15 { left: 298.1pt; top: 594.1pt; } /* Institute Name */
 
-  /* Row 8: Percentage | Grade — y≈617.7pt */
-  .c16 { left: 327.4px; top: 617.7px; text-align: center; width: 100px; } /* Percentage */
-  .c17 { left: 535.8px; top: 617.7px; } /* Grade */
+  /* Row 8: Percentage | Grade — y=617.7pt — left-aligned */
+  .c16 { left: 327.4pt; top: 617.7pt; } /* Percentage */
+  .c17 { left: 535.8pt; top: 617.7pt; } /* Grade */
 
-  /* QR Code — left=261.9, top=649.1, 70.1×70.1 pts */
-  .qr { position: absolute; z-index: 10; left: 261.9px; top: 649.1px; width: 70.1px; height: 70.1px; border: 0.5px solid #000; background: #fff; }
+  /* QR Code — left=261.9pt, top=649.1pt, 70.1×70.1pt */
+  .qr { position: absolute; z-index: 10; left: 261.9pt; top: 649.1pt; width: 70.1pt; height: 70.1pt; border: 0.5pt solid #000; background: #fff; }
 </style>
 </head>
 <body>
@@ -108,7 +110,7 @@ function buildCertificateHTML(
   <!-- Watermark -->
   <div class="wm">
     ${Array.from({ length: 12 }, (_, i) =>
-      `<div class="wm-text" style="top: ${-80 + i * 80}px;">${esc(data.instituteName || 'Z-TECH CAREER ACADEMY')}</div>`
+      `<div class="wm-text" style="top: ${-80 + i * 80}pt;">${esc(data.instituteName || 'Z-TECH CAREER ACADEMY')}</div>`
     ).join('\n    ')}
   </div>
 
@@ -201,12 +203,17 @@ export async function POST(request: NextRequest) {
 
     const browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
+    // Use deviceScaleFactor=2 for crisp rendering
+    // Viewport 595×842 at 96dpi = A4 page in screen pixels
+    await page.setViewportSize({ width: 595, height: 842 });
     await page.setContent(html, { waitUntil: "networkidle" });
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
 
+    // Generate PDF with exact A4 dimensions using mm units
+    // 210mm × 297mm = A4 = 595.28pt × 841.89pt
     const pdfBuffer = await page.pdf({
-      width: "595.28px",
-      height: "841.89px",
+      width: "210mm",
+      height: "297mm",
       margin: { top: "0", right: "0", bottom: "0", left: "0" },
       printBackground: true,
     });

@@ -172,3 +172,23 @@ Stage Summary:
 - Background image extracted from original certificate PDF serves as template
 - API route generates PDF via Playwright using same HTML template
 - Company info fully updated to Z-TECH CAREER ACADEMY
+---
+Task ID: 2
+Agent: Main
+Task: Fix server crashes — create .zscripts/dev.sh that runs init-fullstack.sh
+
+Work Log:
+- Analyzed existing dev.sh — found it used set -euo pipefail (fragile), no crash recovery, no health monitoring
+- Created init-fullstack.sh with: deps install, DB setup, server start, and self-healing watchdog
+- Tested multiple process isolation strategies (setsid, nohup+disown, subshell+exec, separate runner script)
+- Discovered root cause: `bun run dev` exits entirely when next-server crashes, AND the parent bash script dies due to process group signal propagation
+- Final working pattern: `nohup bun run dev >> logfile 2>&1 & disown` + simple curl-based watchdog loop
+- Watchdog checks health every 8s, auto-restarts within ~20s of crash, with crash-loop throttling (5 crashes/60s → 30s cooldown)
+- Verified: killed next-server → watchdog detected → killed stale processes → restarted → confirmed recovery
+- Updated dev.sh to delegate to init-fullstack.sh
+
+Stage Summary:
+- .zscripts/dev.sh → calls init-fullstack.sh
+- .zscripts/init-fullstack.sh → bulletproof init with watchdog (proven auto-recovery)
+- Server auto-restarts after crashes without manual intervention
+- Log file: .zscripts/init-fullstack.log

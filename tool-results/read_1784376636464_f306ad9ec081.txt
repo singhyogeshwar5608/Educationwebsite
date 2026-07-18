@@ -1,0 +1,554 @@
+     1→"use client";
+     2→
+     3→import { useRef } from "react";
+     4→import {
+     5→  Download,
+     6→  Award,
+     7→  User,
+     8→  BookOpen,
+     9→  TrendingUp,
+    10→  CheckCircle2,
+    11→  XCircle,
+    12→  Star,
+    13→  Printer,
+    14→  Calendar,
+    15→  Hash,
+    16→} from "lucide-react";
+    17→import type { StudentResult } from "@/data/results";
+    18→
+    19→interface ResultCardProps {
+    20→  result: StudentResult;
+    21→}
+    22→
+    23→export default function ResultCard({ result }: ResultCardProps) {
+    24→  const cardRef = useRef<HTMLDivElement>(null);
+    25→
+    26→  const handleDownload = () => {
+    27→    const printContent = cardRef.current;
+    28→    if (!printContent) return;
+    29→
+    30→    const printWindow = window.open("", "_blank");
+    31→    if (!printWindow) return;
+    32→
+    33→    printWindow.document.write(`
+    34→      <!DOCTYPE html>
+    35→      <html>
+    36→      <head>
+    37→        <title>Marksheet - ${result.studentName} - ${result.rollNumber}</title>
+    38→        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    39→        <style>
+    40→          * { margin: 0; padding: 0; box-sizing: border-box; }
+    41→          body { font-family: 'Poppins', sans-serif; padding: 40px; color: #0A2647; }
+    42→          .header { text-align: center; border-bottom: 3px double #0A2647; padding-bottom: 20px; margin-bottom: 20px; }
+    43→          .header h1 { font-size: 22px; font-weight: 800; color: #0A2647; letter-spacing: 1px; }
+    44→          .header p { font-size: 12px; color: #666; margin-top: 4px; }
+    45→          .student-info { display: flex; justify-content: space-between; margin-bottom: 20px; }
+    46→          .student-left { flex: 1; }
+    47→          .student-left p { font-size: 13px; margin-bottom: 6px; }
+    48→          .student-left strong { font-weight: 600; }
+    49→          .student-right { text-align: right; }
+    50→          .student-right p { font-size: 13px; margin-bottom: 6px; }
+    51→          table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    52→          th { background: #0A2647; color: white; padding: 10px 12px; font-size: 12px; text-align: left; }
+    53→          td { padding: 8px 12px; font-size: 12px; border-bottom: 1px solid #e5e7eb; }
+    54→          tr:nth-child(even) td { background: #F8F9FA; }
+    55→          .summary { display: flex; justify-content: space-between; margin-top: 20px; padding: 15px 20px; background: #F0F8FF; border-radius: 8px; }
+    56→          .summary-item { text-align: center; }
+    57→          .summary-item .label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+    58→          .summary-item .value { font-size: 18px; font-weight: 700; color: #0A2647; }
+    59→          .footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+    60→          .footer p { font-size: 10px; color: #999; }
+    61→          .signatures { display: flex; justify-content: space-between; margin-top: 40px; }
+    62→          .sig-box { text-align: center; width: 200px; }
+    63→          .sig-line { border-top: 1px solid #0A2647; margin-top: 50px; padding-top: 5px; font-size: 11px; color: #0A2647; font-weight: 600; }
+    64→        </style>
+    65→      </head>
+    66→      <body>
+    67→        <div class="header">
+    68→          <h1>Z-TECH CAREER ACADEMY</h1>
+    69→          <p>Behind Jat School, Rishi Nagar, Gali No. 9, Kaithal, Haryana</p>
+    70→          <p style="margin-top:8px; font-weight:600; font-size:14px; color:#0A2647;">STATEMENT OF MARKS</p>
+    71→        </div>
+    72→        <div class="student-info">
+    73→          <div class="student-left">
+    74→            <p><strong>Name:</strong> ${result.studentName}</p>
+    75→            <p><strong>Father's Name:</strong> ${result.fatherName}</p>
+    76→            <p><strong>Course:</strong> ${result.courseName}</p>
+    77→            <p><strong>Duration:</strong> ${result.courseDuration}</p>
+    78→          </div>
+    79→          <div class="student-right">
+    80→            <p><strong>Roll No:</strong> ${result.rollNumber}</p>
+    81→            <p><strong>Batch:</strong> ${result.batchYear}</p>
+    82→            <p><strong>Certificate No:</strong> ${result.certificateNo}</p>
+    83→            <p><strong>Date of Issue:</strong> ${result.issueDate}</p>
+    84→          </div>
+    85→        </div>
+    86→        <table>
+    87→          <thead>
+    88→            <tr>
+    89→              <th>S.No.</th>
+    90→              <th>Subject</th>
+    91→              <th>Max Marks</th>
+    92→              <th>Obtained Marks</th>
+    93→              <th>Status</th>
+    94→            </tr>
+    95→          </thead>
+    96→          <tbody>
+    97→            ${result.subjects
+    98→              .map(
+    99→                (s, i) => `
+   100→              <tr>
+   101→                <td>${i + 1}</td>
+   102→                <td>${s.subject}</td>
+   103→                <td>${s.maxMarks}</td>
+   104→                <td><strong>${s.obtainedMarks}</strong></td>
+   105→                <td style="color: ${s.obtainedMarks >= s.maxMarks * 0.33 ? "#28A745" : "#dc2626"}">${s.obtainedMarks >= s.maxMarks * 0.33 ? "PASS" : "FAIL"}</td>
+   106→              </tr>
+   107→            `
+   108→              )
+   109→              .join("")}
+   110→            <tr style="background:#0A2647 !important;">
+   111→              <td colspan="2" style="color:white; font-weight:700;">TOTAL</td>
+   112→              <td style="color:white; font-weight:700;">${result.totalMaxMarks}</td>
+   113→              <td style="color:#FFC107; font-weight:700;">${result.totalObtainedMarks}</td>
+   114→              <td style="color:${result.resultStatus === "FAIL" ? "#f87171" : "#34d058"}; font-weight:700;">${result.resultStatus}</td>
+   115→            </tr>
+   116→          </tbody>
+   117→        </table>
+   118→        <div class="summary">
+   119→          <div class="summary-item">
+   120→            <div class="label">Percentage</div>
+   121→            <div class="value">${result.percentage}%</div>
+   122→          </div>
+   123→          <div class="summary-item">
+   124→            <div class="label">Grade</div>
+   125→            <div class="value">${result.grade}</div>
+   126→          </div>
+   127→          <div class="summary-item">
+   128→            <div class="label">Result</div>
+   129→            <div class="value" style="color:${result.resultStatus === "FAIL" ? "#dc2626" : result.resultStatus === "DISTINCTION" ? "#FFC107" : "#28A745"}">${result.resultStatus}</div>
+   130→          </div>
+   131→        </div>
+   132→        <div class="signatures">
+   133→          <div class="sig-box"><div class="sig-line">Student Signature</div></div>
+   134→          <div class="sig-box"><div class="sig-line">Director Signature</div></div>
+   135→        </div>
+   136→        <div class="footer">
+   137→          <p>This is a computer-generated marksheet from Z-TECH CAREER ACADEMY.</p>
+   138→          <p>Owner: Vijay Kumar Singla (M.Com, MBA) | Email: ztca2012@gmail.com</p>
+   139→        </div>
+   140→      </body>
+   141→      </html>
+   142→    `);
+   143→    printWindow.document.close();
+   144→    printWindow.print();
+   145→  };
+   146→
+   147→  const handlePrint = () => {
+   148→    window.print();
+   149→  };
+   150→
+   151→  const getGradeColor = (grade: string) => {
+   152→    switch (grade) {
+   153→      case "A+":
+   154→        return "text-gold";
+   155→      case "A":
+   156→        return "text-green";
+   157→      case "B":
+   158→        return "text-blue-600";
+   159→      case "C":
+   160→        return "text-orange-500";
+   161→      case "D":
+   162→        return "text-yellow-600";
+   163→      case "F":
+   164→        return "text-red-500";
+   165→      default:
+   166→        return "text-navy";
+   167→    }
+   168→  };
+   169→
+   170→  const getStatusBadge = (status: string) => {
+   171→    switch (status) {
+   172→      case "DISTINCTION":
+   173→        return "bg-gold/20 text-navy border-gold/30";
+   174→      case "PASS":
+   175→        return "bg-green/20 text-green border-green/30";
+   176→      case "FAIL":
+   177→        return "bg-red-100 text-red-600 border-red-200";
+   178→      default:
+   179→        return "bg-gray-100 text-gray-600 border-gray-200";
+   180→    }
+   181→  };
+   182→
+   183→  const getProgressBarColor = (percentage: number) => {
+   184→    if (percentage >= 75) return "bg-gold";
+   185→    if (percentage >= 60) return "bg-green";
+   186→    if (percentage >= 50) return "bg-blue-500";
+   187→    if (percentage >= 33) return "bg-orange-400";
+   188→    return "bg-red-500";
+   189→  };
+   190→
+   191→  return (
+   192→    <section className="py-5 sm:py-8 lg:py-12 bg-light-gray relative">
+   193→      <div className="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8">
+   194→        {/* Premium Glass Card */}
+   195→        <div className="relative" ref={cardRef}>
+   196→          {/* Gradient border glow */}
+   197→          <div className="absolute -inset-0.5 sm:-inset-1 bg-gradient-to-r from-navy via-gold to-navy-light rounded-xl sm:rounded-3xl opacity-25 blur-sm" />
+   198→
+   199→          <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 rounded-xl sm:rounded-3xl shadow-2xl overflow-hidden">
+   200→            {/* ══════════════════════════════════════════
+   201→                Card Header — Navy Banner
+   202→            ══════════════════════════════════════════ */}
+   203→            <div className="bg-navy relative overflow-hidden">
+   204→              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iLjAzIj48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnYtMmgtNHY2aDR2LTJtMC0xNmgtMnY0aDJ2LTRtLTQgMGgtMnYyaDJ2LTJtMiA0aDJ2LTJoLTJ2Mm0tNCAyaC0ydjJoMnYtMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
+   205→              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 lg:py-8 relative z-10">
+   206→                <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
+   207→                  {/* Student Photo */}
+   208→                  <div className="relative shrink-0">
+   209→                    <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-xl sm:rounded-2xl overflow-hidden border-3 sm:border-4 border-gold/50 shadow-xl bg-white/10">
+   210→                      <img
+   211→                        src={result.photo}
+   212→                        alt={result.studentName}
+   213→                        className="w-full h-full object-cover"
+   214→                        onError={(e) => {
+   215→                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(result.studentName)}&background=0A2647&color=FFC107&size=112&bold=true`;
+   216→                        }}
+   217→                      />
+   218→                    </div>
+   219→                    {/* Grade Badge on photo */}
+   220→                    <div className="absolute -bottom-1.5 -right-1.5 sm:-bottom-2 sm:-right-2 bg-gold text-navy font-extrabold text-sm sm:text-lg w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg border-2 border-white">
+   221→                      {result.grade}
+   222→                    </div>
+   223→                  </div>
+   224→
+   225→                  {/* Student Info */}
+   226→                  <div className="text-center sm:text-left flex-1 min-w-0">
+   227→                    <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold text-white mb-0.5 sm:mb-1 truncate">
+   228→                      {result.studentName}
+   229→                    </h3>
+   230→                    <p className="text-blue-200/80 text-xs sm:text-sm mb-2 sm:mb-3">
+   231→                      Father: {result.fatherName}
+   232→                    </p>
+   233→                    <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center sm:justify-start gap-1.5 sm:gap-2">
+   234→                      <span className="inline-flex items-center gap-1 sm:gap-1.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white text-[10px] sm:text-xs font-medium px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg truncate max-w-full">
+   235→                        <Hash className="w-3 h-3 shrink-0" />
+   236→                        <span className="truncate">{result.rollNumber}</span>
+   237→                      </span>
+   238→                      <span className="inline-flex items-center gap-1 sm:gap-1.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white text-[10px] sm:text-xs font-medium px-2 sm:px-3 py-1 sm:py-1.5 rounded-md sm:rounded-lg truncate max-w-full">
+   239→                        <BookOpen className="w-3 h-3 shrink-0" />
+   240→                        <span className="truncate">{result.courseName}</span>
+   241→                      </span>
+   242→                    </div>
+   243→                  </div>
+   244→
+   245→                  {/* Result Status Badge */}
+   246→                  <div className="shrink-0">
+   247→                    <div
+   248→                      className={`inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-bold border ${getStatusBadge(
+   249→                        result.resultStatus
+   250→                      )}`}
+   251→                    >
+   252→                      {result.resultStatus === "FAIL" ? (
+   253→                        <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+   254→                      ) : (
+   255→                        <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+   256→                      )}
+   257→                      {result.resultStatus}
+   258→                    </div>
+   259→                  </div>
+   260→                </div>
+   261→              </div>
+   262→            </div>
+   263→
+   264→            {/* ══════════════════════════════════════════
+   265→                Card Body
+   266→            ══════════════════════════════════════════ */}
+   267→            <div className="p-4 sm:p-6 lg:p-10">
+   268→              {/* Quick Info Row — 2x2 on mobile, 4-col on sm+ */}
+   269→              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-5 sm:mb-8">
+   270→                <div className="bg-light-blue rounded-lg sm:rounded-xl p-2.5 sm:p-4 text-center border border-navy/5">
+   271→                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-navy mx-auto mb-0.5 sm:mb-1" />
+   272→                  <p className="text-[10px] sm:text-xs text-text-gray">Batch</p>
+   273→                  <p className="text-xs sm:text-sm font-bold text-navy">{result.batchYear}</p>
+   274→                </div>
+   275→                <div className="bg-light-blue rounded-lg sm:rounded-xl p-2.5 sm:p-4 text-center border border-navy/5">
+   276→                  <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-navy mx-auto mb-0.5 sm:mb-1" />
+   277→                  <p className="text-[10px] sm:text-xs text-text-gray">Duration</p>
+   278→                  <p className="text-xs sm:text-sm font-bold text-navy">{result.courseDuration}</p>
+   279→                </div>
+   280→                <div className="bg-light-blue rounded-lg sm:rounded-xl p-2.5 sm:p-4 text-center border border-navy/5">
+   281→                  <Award className="w-4 h-4 sm:w-5 sm:h-5 text-navy mx-auto mb-0.5 sm:mb-1" />
+   282→                  <p className="text-[10px] sm:text-xs text-text-gray">Grade</p>
+   283→                  <p className={`text-xs sm:text-sm font-bold ${getGradeColor(result.grade)}`}>
+   284→                    {result.grade}
+   285→                  </p>
+   286→                </div>
+   287→                <div className="bg-light-blue rounded-lg sm:rounded-xl p-2.5 sm:p-4 text-center border border-navy/5">
+   288→                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-navy mx-auto mb-0.5 sm:mb-1" />
+   289→                  <p className="text-[10px] sm:text-xs text-text-gray">Percentage</p>
+   290→                  <p className={`text-xs sm:text-sm font-bold ${getGradeColor(result.grade)}`}>
+   291→                    {result.percentage}%
+   292→                  </p>
+   293→                </div>
+   294→              </div>
+   295→
+   296→              {/* ── Subject-wise Marks Table ── */}
+   297→              <div className="mb-5 sm:mb-8">
+   298→                <h4 className="text-base sm:text-lg font-bold text-navy mb-3 sm:mb-4 flex items-center gap-2">
+   299→                  <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
+   300→                  Subject-wise Marks
+   301→                </h4>
+   302→
+   303→                {/* Mobile: Card layout for each subject */}
+   304→                <div className="sm:hidden space-y-2">
+   305→                  {result.subjects.map((subject, index) => {
+   306→                    const isPass = subject.obtainedMarks >= subject.maxMarks * 0.33;
+   307→                    const pct = Math.round((subject.obtainedMarks / subject.maxMarks) * 100);
+   308→                    return (
+   309→                      <div
+   310→                        key={index}
+   311→                        className={`rounded-lg border p-3 ${
+   312→                          index % 2 === 0 ? "bg-white border-gray-100" : "bg-light-gray border-gray-200"
+   313→                        }`}
+   314→                      >
+   315→                        <div className="flex items-center justify-between mb-2">
+   316→                          <p className="text-sm font-semibold text-navy flex-1 min-w-0 mr-2 truncate">
+   317→                            <span className="text-text-gray font-normal text-xs mr-1">{index + 1}.</span>
+   318→                            {subject.subject}
+   319→                          </p>
+   320→                          <span
+   321→                            className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+   322→                              isPass ? "bg-green/10 text-green" : "bg-red-100 text-red-600"
+   323→                            }`}
+   324→                          >
+   325→                            {isPass ? <CheckCircle2 className="w-2.5 h-2.5" /> : <XCircle className="w-2.5 h-2.5" />}
+   326→                            {isPass ? "PASS" : "FAIL"}
+   327→                          </span>
+   328→                        </div>
+   329→                        <div className="flex items-center gap-3">
+   330→                          <div className="flex-1 bg-gray-200 rounded-full h-1.5">
+   331→                            <div
+   332→                              className={`${getProgressBarColor(pct)} h-1.5 rounded-full transition-all duration-500`}
+   333→                              style={{ width: `${pct}%` }}
+   334→                            />
+   335→                          </div>
+   336→                          <span className="text-xs font-bold text-navy shrink-0">
+   337→                            {subject.obtainedMarks}/{subject.maxMarks}
+   338→                          </span>
+   339→                        </div>
+   340→                      </div>
+   341→                    );
+   342→                  })}
+   343→                  {/* Total Row Mobile */}
+   344→                  <div className="bg-navy text-white rounded-lg p-3 flex items-center justify-between">
+   345→                    <span className="font-bold text-sm">TOTAL</span>
+   346→                    <div className="flex items-center gap-3">
+   347→                      <span className="text-gold font-bold text-sm">{result.totalObtainedMarks}/{result.totalMaxMarks}</span>
+   348→                      <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusBadge(result.resultStatus)}`}>
+   349→                        {result.resultStatus === "FAIL" ? <XCircle className="w-2.5 h-2.5" /> : <CheckCircle2 className="w-2.5 h-2.5" />}
+   350→                        {result.resultStatus}
+   351→                      </span>
+   352→                    </div>
+   353→                  </div>
+   354→                </div>
+   355→
+   356→                {/* Desktop: Table layout */}
+   357→                <div className="hidden sm:block overflow-x-auto rounded-xl border border-gray-200">
+   358→                  <table className="w-full">
+   359→                    <thead>
+   360→                      <tr className="bg-navy text-white">
+   361→                        <th className="text-left px-4 py-3 text-sm font-semibold">S.No.</th>
+   362→                        <th className="text-left px-4 py-3 text-sm font-semibold">Subject</th>
+   363→                        <th className="text-center px-4 py-3 text-sm font-semibold">Max Marks</th>
+   364→                        <th className="text-center px-4 py-3 text-sm font-semibold">Obtained</th>
+   365→                        <th className="text-center px-4 py-3 text-sm font-semibold">Status</th>
+   366→                      </tr>
+   367→                    </thead>
+   368→                    <tbody>
+   369→                      {result.subjects.map((subject, index) => {
+   370→                        const isPass = subject.obtainedMarks >= subject.maxMarks * 0.33;
+   371→                        return (
+   372→                          <tr
+   373→                            key={index}
+   374→                            className={`${
+   375→                              index % 2 === 0 ? "bg-white" : "bg-light-gray"
+   376→                            } hover:bg-light-blue transition-colors`}
+   377→                          >
+   378→                            <td className="px-4 py-3 text-sm text-text-gray">{index + 1}</td>
+   379→                            <td className="px-4 py-3 text-sm font-medium text-navy">{subject.subject}</td>
+   380→                            <td className="px-4 py-3 text-sm text-center text-text-gray">{subject.maxMarks}</td>
+   381→                            <td className="px-4 py-3 text-sm text-center font-bold text-navy">{subject.obtainedMarks}</td>
+   382→                            <td className="px-4 py-3 text-center">
+   383→                              <span
+   384→                                className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full ${
+   385→                                  isPass
+   386→                                    ? "bg-green/10 text-green"
+   387→                                    : "bg-red-100 text-red-600"
+   388→                                }`}
+   389→                              >
+   390→                                {isPass ? (
+   391→                                  <CheckCircle2 className="w-3 h-3" />
+   392→                                ) : (
+   393→                                  <XCircle className="w-3 h-3" />
+   394→                                )}
+   395→                                {isPass ? "PASS" : "FAIL"}
+   396→                              </span>
+   397→                            </td>
+   398→                          </tr>
+   399→                        );
+   400→                      })}
+   401→                      {/* Total Row */}
+   402→                      <tr className="bg-navy text-white">
+   403→                        <td className="px-4 py-3 text-sm font-bold" colSpan={2}>TOTAL</td>
+   404→                        <td className="px-4 py-3 text-sm text-center font-bold">{result.totalMaxMarks}</td>
+   405→                        <td className="px-4 py-3 text-sm text-center font-bold text-gold">{result.totalObtainedMarks}</td>
+   406→                        <td className="px-4 py-3 text-center">
+   407→                          <span
+   408→                            className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${getStatusBadge(
+   409→                              result.resultStatus
+   410→                            )}`}
+   411→                          >
+   412→                            {result.resultStatus === "FAIL" ? (
+   413→                              <XCircle className="w-3 h-3" />
+   414→                            ) : (
+   415→                              <CheckCircle2 className="w-3 h-3" />
+   416→                            )}
+   417→                            {result.resultStatus}
+   418→                          </span>
+   419→                        </td>
+   420→                      </tr>
+   421→                    </tbody>
+   422→                  </table>
+   423→                </div>
+   424→              </div>
+   425→
+   426→              {/* ── Performance Visual ── */}
+   427→              <div className="mb-5 sm:mb-8">
+   428→                <h4 className="text-base sm:text-lg font-bold text-navy mb-3 sm:mb-4 flex items-center gap-2">
+   429→                  <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-gold" />
+   430→                  Performance Overview
+   431→                </h4>
+   432→
+   433→                <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-8 bg-light-blue rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-navy/5">
+   434→                  {/* Circular Progress */}
+   435→                  <div className="relative w-28 h-28 sm:w-36 sm:h-36 shrink-0">
+   436→                    <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+   437→                      <circle cx="60" cy="60" r="50" fill="none" stroke="#e5e7eb" strokeWidth="10" />
+   438→                      <circle
+   439→                        cx="60"
+   440→                        cy="60"
+   441→                        r="50"
+   442→                        fill="none"
+   443→                        stroke={result.percentage >= 75 ? "#FFC107" : result.percentage >= 50 ? "#28A745" : result.percentage >= 33 ? "#f97316" : "#ef4444"}
+   444→                        strokeWidth="10"
+   445→                        strokeLinecap="round"
+   446→                        strokeDasharray={`${(result.percentage / 100) * 314} 314`}
+   447→                        className="transition-all duration-1000 ease-out"
+   448→                      />
+   449→                    </svg>
+   450→                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+   451→                      <span className={`text-xl sm:text-3xl font-extrabold ${getGradeColor(result.grade)}`}>
+   452→                        {result.percentage}%
+   453→                      </span>
+   454→                      <span className="text-[10px] sm:text-xs text-text-gray font-medium">Overall</span>
+   455→                    </div>
+   456→                  </div>
+   457→
+   458→                  {/* Subject Progress Bars */}
+   459→                  <div className="flex-1 w-full space-y-2 sm:space-y-3">
+   460→                    {result.subjects.map((subject, index) => {
+   461→                      const pct = Math.round((subject.obtainedMarks / subject.maxMarks) * 100);
+   462→                      return (
+   463→                        <div key={index}>
+   464→                          <div className="flex items-center justify-between mb-0.5 sm:mb-1">
+   465→                            <span className="text-[10px] sm:text-xs font-medium text-navy truncate max-w-[120px] sm:max-w-[180px]">
+   466→                              {subject.subject}
+   467→                            </span>
+   468→                            <span className="text-[10px] sm:text-xs font-bold text-text-gray ml-2 shrink-0">
+   469→                              {subject.obtainedMarks}/{subject.maxMarks}
+   470→                            </span>
+   471→                          </div>
+   472→                          <div className="w-full bg-gray-200 rounded-full h-1.5 sm:h-2.5">
+   473→                            <div
+   474→                              className={`${getProgressBarColor(pct)} h-1.5 sm:h-2.5 rounded-full transition-all duration-700 ease-out`}
+   475→                              style={{ width: `${pct}%` }}
+   476→                            />
+   477→                          </div>
+   478→                        </div>
+   479→                      );
+   480→                    })}
+   481→                  </div>
+   482→                </div>
+   483→              </div>
+   484→
+   485→              {/* ── Summary Stats ── */}
+   486→              <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5 sm:mb-8">
+   487→                <div className="text-center p-3 sm:p-5 rounded-lg sm:rounded-xl bg-gradient-to-br from-gold/10 to-gold/5 border border-gold/20">
+   488→                  <Star className="w-4 h-4 sm:w-6 sm:h-6 text-gold mx-auto mb-1 sm:mb-2" />
+   489→                  <p className="text-lg sm:text-2xl font-extrabold text-navy">{result.grade}</p>
+   490→                  <p className="text-[9px] sm:text-xs text-text-gray font-medium">Grade</p>
+   491→                </div>
+   492→                <div className="text-center p-3 sm:p-5 rounded-lg sm:rounded-xl bg-gradient-to-br from-green/10 to-green/5 border border-green/20">
+   493→                  <TrendingUp className="w-4 h-4 sm:w-6 sm:h-6 text-green mx-auto mb-1 sm:mb-2" />
+   494→                  <p className="text-lg sm:text-2xl font-extrabold text-navy">{result.percentage}%</p>
+   495→                  <p className="text-[9px] sm:text-xs text-text-gray font-medium">Percentage</p>
+   496→                </div>
+   497→                <div
+   498→                  className={`text-center p-3 sm:p-5 rounded-lg sm:rounded-xl ${
+   499→                    result.resultStatus === "FAIL"
+   500→                      ? "bg-gradient-to-br from-red-100 to-red-50 border border-red-200"
+   501→                      : result.resultStatus === "DISTINCTION"
+   502→                      ? "bg-gradient-to-br from-gold/10 to-gold/5 border border-gold/20"
+   503→                      : "bg-gradient-to-br from-green/10 to-green/5 border border-green/20"
+   504→                  }`}
+   505→                >
+   506→                  {result.resultStatus === "FAIL" ? (
+   507→                    <XCircle className="w-4 h-4 sm:w-6 sm:h-6 text-red-500 mx-auto mb-1 sm:mb-2" />
+   508→                  ) : (
+   509→                    <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6 text-green mx-auto mb-1 sm:mb-2" />
+   510→                  )}
+   511→                  <p className="text-sm sm:text-2xl font-extrabold text-navy">{result.resultStatus}</p>
+   512→                  <p className="text-[9px] sm:text-xs text-text-gray font-medium">Result</p>
+   513→                </div>
+   514→              </div>
+   515→
+   516→              {/* ── Certificate Info ── */}
+   517→              <div className="bg-light-blue rounded-lg sm:rounded-xl p-3 sm:p-4 mb-5 sm:mb-8 border border-navy/5">
+   518→                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-4 text-xs sm:text-sm">
+   519→                  <div className="flex items-center gap-1.5 sm:gap-2 text-text-gray">
+   520→                    <Hash className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-navy shrink-0" />
+   521→                    <span>Certificate No: <strong className="text-navy">{result.certificateNo}</strong></span>
+   522→                  </div>
+   523→                  <div className="flex items-center gap-1.5 sm:gap-2 text-text-gray">
+   524→                    <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-navy shrink-0" />
+   525→                    <span>Issued: <strong className="text-navy">{result.issueDate}</strong></span>
+   526→                  </div>
+   527→                </div>
+   528→              </div>
+   529→
+   530→              {/* ── Action Buttons ── */}
+   531→              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+   532→                <button
+   533→                  onClick={handleDownload}
+   534→                  className="flex-1 inline-flex items-center justify-center gap-2 bg-navy hover:bg-navy-light text-white font-semibold py-3 sm:py-4 rounded-lg sm:rounded-xl transition-all hover:shadow-lg hover:-translate-y-0.5 text-sm sm:text-base"
+   535→                >
+   536→                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
+   537→                  Download Marksheet
+   538→                </button>
+   539→                <button
+   540→                  onClick={handlePrint}
+   541→                  className="inline-flex items-center justify-center gap-2 bg-gold hover:bg-gold-light text-navy font-semibold px-6 sm:px-8 py-3 sm:py-4 rounded-lg sm:rounded-xl transition-all hover:shadow-lg hover:-translate-y-0.5 text-sm sm:text-base"
+   542→                >
+   543→                  <Printer className="w-4 h-4 sm:w-5 sm:h-5" />
+   544→                  Print
+   545→                </button>
+   546→              </div>
+   547→            </div>
+   548→          </div>
+   549→        </div>
+   550→      </div>
+   551→    </section>
+   552→  );
+   553→}
+   554→

@@ -17,7 +17,7 @@ const quickLinks = [
   { label: "Courses", href: "/courses" },
   { label: "Teachers", href: "#teachers" },
   { label: "Results", href: "/results" },
-  { label: "Verify Certificate", href: "#certificate" },
+  { label: "Verify Certificate", href: "/verification" },
   { label: "Gallery", href: "#gallery" },
   { label: "Contact Us", href: "#contact" },
 ];

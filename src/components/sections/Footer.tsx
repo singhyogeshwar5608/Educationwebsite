@@ -12,14 +12,14 @@ import {
 } from "lucide-react";
 
 const quickLinks = [
-  "Home",
-  "About Us",
-  "Courses",
-  "Teachers",
-  "Results",
-  "Verify Certificate",
-  "Gallery",
-  "Contact Us",
+  { label: "Home", href: "/" },
+  { label: "About Us", href: "/about" },
+  { label: "Courses", href: "/courses" },
+  { label: "Teachers", href: "#teachers" },
+  { label: "Results", href: "/results" },
+  { label: "Verify Certificate", href: "#certificate" },
+  { label: "Gallery", href: "#gallery" },
+  { label: "Contact Us", href: "#contact" },
 ];
 
 const courses = [
@@ -77,12 +77,12 @@ export default function Footer() {
             <h3 className="text-white font-bold text-lg mb-5">Quick Links</h3>
             <ul className="space-y-2.5">
               {quickLinks.map((link) => (
-                <li key={link}>
+                <li key={link.label}>
                   <a
-                    href="#"
+                    href={link.href}
                     className="text-blue-200/80 hover:text-gold text-sm transition-colors"
                   >
-                    {link}
+                    {link.label}
                   </a>
                 </li>
               ))}

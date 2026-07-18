@@ -25,7 +25,7 @@ const navItems = [
   { label: "About Us", href: "/about" },
   { label: "Courses", href: "/courses", hasDropdown: true },
   { label: "Teachers", href: "#teachers" },
-  { label: "Results", href: "#results" },
+  { label: "Results", href: "/results" },
   { label: "Verify Certificate", href: "#certificate" },
   { label: "Gallery", href: "#gallery" },
   { label: "Contact", href: "#contact" },

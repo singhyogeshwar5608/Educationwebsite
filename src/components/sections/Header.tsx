@@ -20,8 +20,8 @@ const topBarInfo = {
 };
 
 const navItems = [
-  { label: "Home", href: "#" },
-  { label: "About Us", href: "#about" },
+  { label: "Home", href: "/" },
+  { label: "About Us", href: "/about" },
   { label: "Courses", href: "#courses", hasDropdown: true },
   { label: "Teachers", href: "#teachers" },
   { label: "Results", href: "#results" },
@@ -90,7 +90,7 @@ export default function Header() {
       <nav className="bg-white shadow-md border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 lg:h-[72px]">
           {/* Logo */}
-          <a href="#" className="flex items-center gap-2.5 shrink-0">
+          <a href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="w-10 h-10 bg-navy rounded-lg flex items-center justify-center">
               <GraduationCap className="w-6 h-6 text-gold" />
             </div>

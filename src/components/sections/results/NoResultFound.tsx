@@ -7,43 +7,43 @@ interface NoResultFoundProps {
 
 export default function NoResultFound({ rollNumber, onTryAgain }: NoResultFoundProps) {
   return (
-    <section className="py-8 lg:py-12 bg-light-gray">
-      <div className="max-w-lg mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="py-5 sm:py-8 lg:py-12 bg-light-gray">
+      <div className="max-w-lg mx-auto px-3 sm:px-6 lg:px-8">
         <div className="relative">
-          <div className="absolute -inset-1 bg-gradient-to-r from-red-400 via-orange-300 to-red-400 rounded-2xl opacity-15 blur-sm" />
-          <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 rounded-2xl shadow-xl p-8 text-center">
-            <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5">
-              <SearchX className="w-10 h-10 text-red-400" />
+          <div className="absolute -inset-0.5 sm:-inset-1 bg-gradient-to-r from-red-400 via-orange-300 to-red-400 rounded-xl sm:rounded-2xl opacity-15 blur-sm" />
+          <div className="relative bg-white/90 backdrop-blur-xl border border-white/60 rounded-xl sm:rounded-2xl shadow-xl p-5 sm:p-8 text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-5">
+              <SearchX className="w-8 h-8 sm:w-10 sm:h-10 text-red-400" />
             </div>
-            <h3 className="text-2xl font-bold text-navy mb-2">No Result Found</h3>
-            <p className="text-text-gray text-sm mb-2">
+            <h3 className="text-xl sm:text-2xl font-bold text-navy mb-1.5 sm:mb-2">No Result Found</h3>
+            <p className="text-text-gray text-xs sm:text-sm mb-1.5 sm:mb-2">
               We could not find any result for roll number:
             </p>
-            <p className="text-navy font-bold text-lg mb-6 bg-light-blue inline-block px-4 py-1.5 rounded-lg">
+            <p className="text-navy font-bold text-base sm:text-lg mb-4 sm:mb-6 bg-light-blue inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg">
               {rollNumber}
             </p>
-            <div className="space-y-3 text-sm text-text-gray mb-6">
+            <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-text-gray mb-4 sm:mb-6">
               <p>Please check the following:</p>
-              <ul className="text-left max-w-xs mx-auto space-y-1.5">
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-navy rounded-full mt-1.5 shrink-0" />
-                  Ensure the roll number is entered correctly
+              <ul className="text-left max-w-xs mx-auto space-y-1 sm:space-y-1.5">
+                <li className="flex items-start gap-1.5 sm:gap-2">
+                  <span className="w-1.5 h-1.5 bg-navy rounded-full mt-1 sm:mt-1.5 shrink-0" />
+                  <span>Ensure the roll number is entered correctly</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-navy rounded-full mt-1.5 shrink-0" />
-                  Results may not be declared yet for this batch
+                <li className="flex items-start gap-1.5 sm:gap-2">
+                  <span className="w-1.5 h-1.5 bg-navy rounded-full mt-1 sm:mt-1.5 shrink-0" />
+                  <span>Results may not be declared yet for this batch</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-navy rounded-full mt-1.5 shrink-0" />
-                  Contact the institute for manual verification
+                <li className="flex items-start gap-1.5 sm:gap-2">
+                  <span className="w-1.5 h-1.5 bg-navy rounded-full mt-1 sm:mt-1.5 shrink-0" />
+                  <span>Contact the institute for manual verification</span>
                 </li>
               </ul>
             </div>
             <button
               onClick={onTryAgain}
-              className="inline-flex items-center gap-2 bg-navy hover:bg-navy-light text-white font-semibold px-6 py-3 rounded-xl transition-all hover:shadow-lg"
+              className="inline-flex items-center gap-1.5 sm:gap-2 bg-navy hover:bg-navy-light text-white font-semibold px-5 sm:px-6 py-2.5 sm:py-3 rounded-lg sm:rounded-xl transition-all hover:shadow-lg text-sm sm:text-base"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               Try Again
             </button>
           </div>

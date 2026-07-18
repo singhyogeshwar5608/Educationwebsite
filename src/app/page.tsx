@@ -4,6 +4,7 @@ import Header from "@/components/sections/Header";
 import Hero from "@/components/sections/Hero";
 import FeatureStrip from "@/components/sections/FeatureStrip";
 import CourseSection from "@/components/sections/CourseSection";
+import HighlightedServices from "@/components/sections/HighlightedServices";
 import Statistics from "@/components/sections/Statistics";
 import WhyChooseUs from "@/components/sections/WhyChooseUs";
 import Testimonials from "@/components/sections/Testimonials";
@@ -30,6 +31,7 @@ export default function Home() {
         <AnimateOnScroll>
           <CourseSection />
         </AnimateOnScroll>
+        <HighlightedServices />
         <AnimateOnScroll>
           <Statistics />
         </AnimateOnScroll>

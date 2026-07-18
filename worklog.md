@@ -119,3 +119,30 @@ Stage Summary:
 - CourseCard "View Details" links now navigate to /courses/[id]
 - Fully responsive across desktop, tablet, and mobile
 - Clean build, no errors
+
+---
+Task ID: 5
+Agent: Main Agent
+Task: Add premium Highlighted Services section to homepage after Popular Courses
+
+Work Log:
+- Created HighlightedServices.tsx component with navy→indigo→purple gradient background
+- Designed glassmorphism cards (bg-white/10 backdrop-blur-md border border-white/20 rounded-xl)
+- Left column: "Professional Computer Education" with 6 service cards (Computer Basics, MS Office, Office Work Training, Tally Prime, DTP, Typing)
+- Right column: "Online & Digital Services" with 8 service cards (Passport, PAN Card, Online Job Forms, Haryana Online Forms, NIOS Board Forms, Air Ticket Booking, Railway Ticket Booking, Other Government Services)
+- Each card: gold icon in bg-gold/20 container, white title, light description, hover animation (bg-white/20, border-white/40, -translate-y-1, shadow-lg)
+- Section header: "Our Services" badge pill, "More Than Just Computer Courses" heading with gold SVG underline, light subtitle
+- Atmospheric effects: soft glow orbs (gold/5, navy-light/30, #6d28d9/10), dot-grid pattern at 3% opacity
+- "Get Started Today" gold CTA button at bottom
+- Added to page.tsx after CourseSection, before Statistics (no AnimateOnScroll wrapper — component has internal animations)
+- Build successful, all routes compile cleanly
+- Verified: gradient background renders, all 14 cards present, hover animations work, mobile stacks vertically at 375px
+- Section sits between Popular Courses and Statistics as requested
+
+Stage Summary:
+- Premium highlighted section added to homepage with gradient background and glassmorphism cards
+- 14 service cards across 2 columns (6 education + 8 digital services)
+- Visually distinct from white sections — attracts immediate attention
+- Same design language: gold accents, rounded-xl, navy-based gradient, Poppins font
+- Fully responsive with mobile stacking
+- Clean build, no errors

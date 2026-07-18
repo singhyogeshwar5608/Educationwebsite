@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   ShieldCheck,
   CheckCircle2,
@@ -18,6 +19,7 @@ import {
   Star,
   TrendingUp,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 import type { CertificateData } from "@/data/certificates";
 
@@ -26,92 +28,59 @@ interface VerificationCardProps {
 }
 
 export default function VerificationCard({ certificate }: VerificationCardProps) {
-  const handleDownload = () => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+  const [isGenerating, setIsGenerating] = useState(false);
 
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Certificate - ${certificate.studentName}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-        <style>
-          * { margin: 0; padding: 0; box-sizing: border-box; }
-          body { font-family: 'Poppins', sans-serif; background: #f5f5f5; display: flex; justify-content: center; padding: 20px; }
-          .cert-page { width: 800px; min-height: 600px; background: #fff; border: 3px solid #0A2647; position: relative; padding: 50px; }
-          .cert-inner-border { position: absolute; inset: 8px; border: 2px solid #FFC107; pointer-events: none; }
-          .cert-corner { position: absolute; width: 40px; height: 40px; border: 3px solid #0A2647; }
-          .cert-corner.tl { top: 15px; left: 15px; border-right: none; border-bottom: none; }
-          .cert-corner.tr { top: 15px; right: 15px; border-left: none; border-bottom: none; }
-          .cert-corner.bl { bottom: 15px; left: 15px; border-right: none; border-top: none; }
-          .cert-corner.br { bottom: 15px; right: 15px; border-left: none; border-top: none; }
-          .header { text-align: center; margin-bottom: 30px; }
-          .header h1 { font-family: 'Playfair Display', serif; font-size: 28px; color: #0A2647; letter-spacing: 2px; }
-          .header .subtitle { font-size: 11px; color: #666; letter-spacing: 3px; text-transform: uppercase; margin-top: 5px; }
-          .header .cert-title { font-size: 36px; font-weight: 800; color: #0A2647; margin: 20px 0 10px; letter-spacing: 4px; text-transform: uppercase; }
-          .body-text { text-align: center; line-height: 2; font-size: 14px; color: #0A2647; }
-          .body-text .name { font-size: 24px; font-weight: 700; color: #0A2647; margin: 10px 0; border-bottom: 2px solid #FFC107; display: inline-block; padding-bottom: 2px; }
-          .body-text .course { font-weight: 600; color: #144272; }
-          .details-grid { display: flex; justify-content: space-around; margin: 25px 0; text-align: center; }
-          .detail-item .label { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; }
-          .detail-item .value { font-size: 14px; font-weight: 700; color: #0A2647; }
-          .stamp-section { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; }
-          .stamp-box { text-align: center; }
-          .stamp-circle { width: 80px; height: 80px; border: 3px solid #0A2647; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 5px; font-size: 9px; font-weight: 700; color: #0A2647; text-align: center; line-height: 1.3; }
-          .sig-line { border-top: 1px solid #0A2647; width: 160px; margin-top: 40px; padding-top: 5px; font-size: 10px; color: #0A2647; font-weight: 600; }
-          .footer { text-align: center; margin-top: 20px; font-size: 9px; color: #999; border-top: 1px solid #eee; padding-top: 10px; }
-          .qr-placeholder { width: 70px; height: 70px; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #aaa; }
-        </style>
-      </head>
-      <body>
-        <div class="cert-page">
-          <div class="cert-inner-border"></div>
-          <div class="cert-corner tl"></div>
-          <div class="cert-corner tr"></div>
-          <div class="cert-corner bl"></div>
-          <div class="cert-corner br"></div>
-          <div class="header">
-            <h1>Z-TECH CAREER ACADEMY</h1>
-            <div class="subtitle">Behind Jat School, Rishi Nagar, Gali No. 9, Kaithal, Haryana</div>
-            <div class="cert-title">Certificate of Completion</div>
-          </div>
-          <div class="body-text">
-            This is to certify that<br/>
-            <div class="name">${certificate.studentName}</div><br/>
-            S/o D/o <strong>${certificate.fatherName}</strong><br/>
-            has successfully completed the course<br/>
-            <span class="course">${certificate.courseName}</span><br/>
-            with <strong>${certificate.grade} Grade</strong> securing <strong>${certificate.percentage}%</strong> marks.
-          </div>
-          <div class="details-grid">
-            <div class="detail-item"><div class="label">Roll No</div><div class="value">${certificate.rollNumber}</div></div>
-            <div class="detail-item"><div class="label">Duration</div><div class="value">${certificate.courseDuration}</div></div>
-            <div class="detail-item"><div class="label">Batch</div><div class="value">${certificate.batchYear}</div></div>
-            <div class="detail-item"><div class="label">Certificate No</div><div class="value">${certificate.certificateNo}</div></div>
-          </div>
-          <div class="stamp-section">
-            <div class="stamp-box">
-              <div class="sig-line">Student Signature</div>
-            </div>
-            <div class="stamp-box">
-              <div class="stamp-circle">Z-TECH<br/>CAREER<br/>ACADEMY</div>
-              <div style="font-size:9px;color:#666;">Official Seal</div>
-            </div>
-            <div class="stamp-box">
-              <div class="sig-line">Director</div>
-            </div>
-          </div>
-          <div class="footer">
-            Certificate No: ${certificate.certificateNo} | Issued: ${certificate.issueDate} | Verify at: ztechacademy.in/verification<br/>
-            Owner: Vijay Kumar Singla (M.Com, MBA) | Email: ztca2012@gmail.com
-          </div>
-        </div>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-    setTimeout(() => printWindow.print(), 500);
+  const handleDownload = async () => {
+    setIsGenerating(true);
+    try {
+      // Call the API route to generate the certificate PDF using the original template
+      const response = await fetch("/api/generate-certificate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          certNo: certificate.certificateNo,
+          session: certificate.batchYear,
+          enrollmentNo: certificate.enrollmentNo,
+          rollNo: certificate.rollNumber,
+          regCode: certificate.enrollmentNo,
+          studentName: certificate.studentName,
+          dob: certificate.dob,
+          fatherName: certificate.fatherName,
+          motherName: certificate.motherName,
+          courseName: certificate.courseName,
+          duration: certificate.courseDuration,
+          startDate: certificate.startDate,
+          endDate: certificate.endDate,
+          issueDate: certificate.issueDate,
+          instituteName: certificate.instituteName,
+          percentage: String(certificate.percentage),
+          grade: certificate.grade,
+          photoUrl: certificate.photo,
+          qrCodeUrl: certificate.qrCodeData,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate certificate");
+      }
+
+      // Download the PDF
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${certificate.certificateNo.replace(/\//g, "-")}-certificate.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Certificate download error:", error);
+      // Fallback: open print dialog
+      window.print();
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handlePrint = () => window.print();
@@ -529,10 +498,11 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
               <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={handleDownload}
-                  className="flex-1 inline-flex items-center justify-center gap-2 bg-green hover:bg-green-light text-white font-semibold py-3 sm:py-4 rounded-lg sm:rounded-xl transition-all hover:shadow-lg hover:-translate-y-0.5 text-sm sm:text-base"
+                  disabled={isGenerating}
+                  className="flex-1 inline-flex items-center justify-center gap-2 bg-green hover:bg-green-light text-white font-semibold py-3 sm:py-4 rounded-lg sm:rounded-xl transition-all hover:shadow-lg hover:-translate-y-0.5 text-sm sm:text-base disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <Download className="w-4 h-4 sm:w-5 sm:h-5" />
-                  Download Certificate
+                  {isGenerating ? <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" /> : <Download className="w-4 h-4 sm:w-5 sm:h-5" />}
+                  {isGenerating ? "Generating PDF..." : "Download Certificate"}
                 </button>
                 <button
                   onClick={handlePrint}

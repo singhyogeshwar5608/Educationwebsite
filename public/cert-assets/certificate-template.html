@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Certificate - Z-TECH CAREER ACADEMY</title>
+<style>
+  @page {
+    size: 595.28px 841.89px;  /* A4 in points */
+    margin: 0;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 595.28px;
+    height: 841.89px;
+  }
+
+  .certificate-page {
+    position: relative;
+    width: 595.28px;
+    height: 841.89px;
+    overflow: hidden;
+    font-family: 'DejaVu Serif', 'Noto Serif', Georgia, serif;
+  }
+
+  /* Full-bleed background image — THE certificate template */
+  .certificate-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 595.28px;
+    height: 841.89px;
+    z-index: 0;
+  }
+
+  /* ─── Dynamic Field Overlays ─── */
+  /* All positions derived from PDF text extraction (points) */
+  /* Font: DejaVuSerifCondensed-Bold at 9pt (header row) and 11pt (body fields) */
+
+  .field {
+    position: absolute;
+    z-index: 10;
+    color: #000000;
+    font-weight: bold;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  /* Header row — 9pt font */
+  .field-header {
+    font-size: 9pt;
+    top: 243.7px;
+  }
+
+  /* Body fields — 11pt font */
+  .field-body {
+    font-size: 11pt;
+  }
+
+  /* Specific field positions — EXACT from PDF extraction */
+
+  /* Row 1: Header fields (top row at y=243.7) */
+  .cert-no         { left: 60.7px;  top: 243.7px;  width: 120px; }
+  .session         { left: 168.8px; top: 243.7px;  width: 80px; }
+  .enrollment-no   { left: 261.7px; top: 243.7px;  width: 120px; }
+  .roll-no         { left: 388.9px; top: 243.7px;  width: 60px; }
+  .reg-code        { left: 484.1px; top: 243.7px;  width: 80px; }
+
+  /* Student Name & DOB row (y=472) */
+  .student-name    { left: 290px;   top: 472px;    width: 200px; }
+  .dob             { left: 488px;   top: 472px;    width: 120px; }
+
+  /* Father & Mother row (y=497) */
+  .father-name     { left: 167.8px; top: 497.3px;  width: 180px; }
+  .mother-name     { left: 438.4px; top: 497.3px;  width: 180px; }
+
+  /* Course Name row (y=522) */
+  .course-name     { left: 246.3px; top: 522.5px;  width: 250px; text-align: center; }
+
+  /* Duration, Start, End row (y=545) */
+  .duration        { left: 201.1px; top: 545.2px;  width: 80px; }
+  .start-date      { left: 375.1px; top: 545.2px;  width: 100px; }
+  .end-date        { left: 491.4px; top: 545.2px;  width: 100px; }
+
+  /* Issue Date (y=570) */
+  .issue-date      { left: 470.7px; top: 569.7px;  width: 100px; }
+
+  /* Institute Name (y=594) */
+  .institute-name  { left: 298.1px; top: 594.1px;  width: 260px; text-align: center; }
+
+  /* Percentage & Grade row (y=618) */
+  .percentage      { left: 327.4px; top: 617.7px;  width: 100px; text-align: center; }
+  .grade           { left: 535.8px; top: 617.7px;  width: 40px; }
+
+  /* Student Photo overlay */
+  .student-photo {
+    position: absolute;
+    z-index: 10;
+    left: 248.8px;
+    top: 281.7px;
+    width: 96px;
+    height: 124.5px;
+    object-fit: cover;
+    border-radius: 0;
+  }
+
+  /* QR Code overlay */
+  .qr-code {
+    position: absolute;
+    z-index: 10;
+    left: 261.9px;
+    top: 649.1px;
+    width: 70.1px;
+    height: 70.1px;
+  }
+</style>
+</head>
+<body>
+<div class="certificate-page">
+  <!-- Background template image -->
+  <img src="certificate-bg.jpg" class="certificate-bg" alt="" />
+
+  <!-- Header Row Fields (9pt) -->
+  <span class="field field-header cert-no">{{CERTIFICATE_NO}}</span>
+  <span class="field field-header session">{{SESSION}}</span>
+  <span class="field field-header enrollment-no">{{ENROLLMENT_NO}}</span>
+  <span class="field field-header roll-no">{{ROLL_NO}}</span>
+  <span class="field field-header reg-code">{{REG_CODE}}</span>
+
+  <!-- Student Photo -->
+  <img src="{{PHOTO_URL}}" class="student-photo" alt="Student Photo" />
+
+  <!-- Body Fields (11pt) -->
+  <span class="field field-body student-name">{{STUDENT_NAME}}</span>
+  <span class="field field-body dob">{{DOB}}</span>
+  <span class="field field-body father-name">{{FATHER_NAME}}</span>
+  <span class="field field-body mother-name">{{MOTHER_NAME}}</span>
+  <span class="field field-body course-name">{{COURSE_NAME}}</span>
+  <span class="field field-body duration">{{DURATION}}</span>
+  <span class="field field-body start-date">{{START_DATE}}</span>
+  <span class="field field-body end-date">{{END_DATE}}</span>
+  <span class="field field-body issue-date">{{ISSUE_DATE}}</span>
+  <span class="field field-body institute-name">{{INSTITUTE_NAME}}</span>
+  <span class="field field-body percentage">{{PERCENTAGE}}</span>
+  <span class="field field-body grade">{{GRADE}}</span>
+
+  <!-- QR Code -->
+  <img src="{{QR_CODE_URL}}" class="qr-code" alt="QR Code" />
+</div>
+</body>
+</html>

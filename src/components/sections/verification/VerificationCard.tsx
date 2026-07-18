@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   ShieldCheck,
   CheckCircle2,
@@ -20,6 +20,8 @@ import {
   TrendingUp,
   ExternalLink,
   Loader2,
+  ZoomIn,
+  X,
 } from "lucide-react";
 import type { CertificateData } from "@/data/certificates";
 
@@ -29,6 +31,8 @@ interface VerificationCardProps {
 
 export default function VerificationCard({ certificate }: VerificationCardProps) {
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const certRef = useRef<HTMLDivElement>(null);
 
   const handleDownload = async () => {
     setIsGenerating(true);
@@ -227,15 +231,27 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
 
               {/* ── Certificate Preview ── */}
               <div className="mb-5 sm:mb-8">
-                <h4 className="text-base sm:text-lg font-bold text-navy mb-3 sm:mb-4 flex items-center gap-2">
-                  <Award className="w-4 h-4 sm:w-5 sm:h-5 text-green" />
-                  Certificate Preview
-                </h4>
+                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                  <h4 className="text-base sm:text-lg font-bold text-navy flex items-center gap-2">
+                    <Award className="w-4 h-4 sm:w-5 sm:h-5 text-green" />
+                    Certificate Preview
+                  </h4>
+                  <button
+                    onClick={() => setIsZoomed(true)}
+                    className="inline-flex items-center gap-1 text-xs sm:text-sm text-navy/60 hover:text-navy font-medium transition-colors"
+                    title="View full size"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden sm:inline">Full Size</span>
+                  </button>
+                </div>
 
                 {/* Certificate Visual — Scaled render of actual certificate */}
                 <div
-                  className="relative rounded-lg sm:rounded-xl overflow-hidden border-2 border-navy/10 shadow-lg mx-auto"
-                  style={{ maxWidth: "595px", aspectRatio: "595.28 / 841.89" }}
+                  ref={certRef}
+                  className="relative rounded-lg sm:rounded-xl overflow-hidden border-2 border-navy/10 shadow-lg mx-auto cursor-zoom-in hover:border-navy/20 transition-colors"
+                  style={{ maxWidth: "774px", aspectRatio: "595.28 / 841.89", width: "100%" }}
+                  onClick={() => setIsZoomed(true)}
                 >
                   {/* Background image — extracted from original certificate PDF */}
                   <img
@@ -245,17 +261,18 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
                   />
 
                   {/* Dynamic text overlay — positions proportional to A4 (595.28 x 841.89 pts)
-                      Calculated from PDF text extraction (PyMuPDF exact coordinates) */}
-                  <div className="absolute inset-0" style={{ fontSize: "clamp(5px, 1.15vw, 11px)", fontFamily: "'DejaVu Serif', Georgia, serif" }}>
+                      Calculated from PDF text extraction (PyMuPDF exact coordinates)
+                      Using larger font sizes & wider containers to prevent overlap */}
+                  <div className="absolute inset-0" style={{ fontSize: "clamp(6px, 1.3vw, 12px)", fontFamily: "'DejaVu Serif', Georgia, serif" }}>
                     {/* Row 1: Centre Code | Session | Enrollment No | Roll No | Serial No — y=243.7pt (28.9%) */}
-                    <span className="absolute font-bold text-black" style={{ left: "10.2%", top: "28.9%", width: "9.7%" }}>{certificate.instituteCode}</span>
-                    <span className="absolute font-bold text-black" style={{ left: "28.4%", top: "28.9%", width: "8.1%" }}>{certificate.session}</span>
-                    <span className="absolute font-bold text-black" style={{ left: "44.0%", top: "28.9%", width: "11.7%" }}>{certificate.enrollmentNo}</span>
-                    <span className="absolute font-bold text-black" style={{ left: "65.3%", top: "28.9%", width: "3.8%" }}>{certificate.rollNumber}</span>
-                    <span className="absolute font-bold text-black" style={{ left: "81.3%", top: "28.9%", width: "6.6%" }}>{certificate.serialNo}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "9.5%", top: "28.6%", width: "10%" }}>{certificate.instituteCode}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "27.5%", top: "28.6%", width: "10%" }}>{certificate.session}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "42.5%", top: "28.6%", width: "15%" }}>{certificate.enrollmentNo}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "64.5%", top: "28.6%", width: "6%" }}>{certificate.rollNumber}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "80.0%", top: "28.6%", width: "8%" }}>{certificate.serialNo}</span>
 
                     {/* Student Photo — left=248.8, top=281.7, 96×124.5 pts */}
-                    <div className="absolute overflow-hidden bg-white border border-blue-600/50" style={{ left: "41.8%", top: "33.5%", width: "16.1%", height: "14.8%", borderWidth: "clamp(1px, 0.13vw, 1.5px)" }}>
+                    <div className="absolute overflow-hidden bg-white border border-blue-600/50" style={{ left: "41.8%", top: "33.5%", width: "16.1%", height: "14.8%", borderWidth: "clamp(1px, 0.15vw, 2px)" }}>
                       <img
                         src={certificate.photo}
                         alt={certificate.studentName}
@@ -267,36 +284,130 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
                     </div>
 
                     {/* Row 2: Student Name | DOB — y=472pt (56.1%) */}
-                    <span className="absolute font-bold text-black" style={{ left: "48.7%", top: "56.1%", width: "30%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.studentName}</span>
-                    <span className="absolute font-bold text-black" style={{ left: "82.0%", top: "56.1%", width: "15%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.dob}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap overflow-hidden" style={{ left: "35%", top: "55.8%", width: "35%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.studentName}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "78%", top: "55.8%", width: "18%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.dob}</span>
 
                     {/* Row 3: Father's Name | Mother's Name — y=497.3pt (59.1%) */}
-                    <span className="absolute font-bold text-black" style={{ left: "28.2%", top: "59.1%", width: "30%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.fatherName}</span>
-                    <span className="absolute font-bold text-black" style={{ left: "73.6%", top: "59.1%", width: "22%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.motherName}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap overflow-hidden" style={{ left: "26%", top: "58.7%", width: "30%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.fatherName}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap overflow-hidden" style={{ left: "70%", top: "58.7%", width: "25%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.motherName}</span>
 
                     {/* Row 4: Course Name — y=522.5pt (62.1%) */}
-                    <span className="absolute font-bold text-black text-center" style={{ left: "41.4%", top: "62.1%", width: "50%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.courseName}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap overflow-hidden" style={{ left: "30%", top: "61.8%", width: "55%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.courseName}</span>
 
                     {/* Row 5: Duration | From | To — y=545.2pt (64.8%) */}
-                    <span className="absolute font-bold text-black" style={{ left: "33.8%", top: "64.8%", width: "12%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.courseDuration}</span>
-                    <span className="absolute font-bold text-black" style={{ left: "63.0%", top: "64.8%", width: "15%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.courseDurationFrom}</span>
-                    <span className="absolute font-bold text-black" style={{ left: "82.5%", top: "64.8%", width: "15%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.courseDurationTo}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "31%", top: "64.5%", width: "14%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.courseDuration}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "58%", top: "64.5%", width: "18%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.courseDurationFrom}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "80%", top: "64.5%", width: "16%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.courseDurationTo}</span>
 
                     {/* Row 6: Completion/Exam Date — y=569.7pt (67.7%) */}
-                    <span className="absolute font-bold text-black" style={{ left: "79.1%", top: "67.7%", width: "15%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.courseDurationTo}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "76%", top: "67.4%", width: "18%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.courseDurationTo}</span>
 
                     {/* Row 7: Institute/Study Centre Name — y=594.1pt (70.6%) */}
-                    <span className="absolute font-bold text-black text-center" style={{ left: "50.1%", top: "70.6%", width: "45%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.instituteName}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap overflow-hidden" style={{ left: "35%", top: "70.3%", width: "50%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.instituteName}</span>
 
                     {/* Row 8: Percentage | Grade — y=617.7pt (73.4%) */}
-                    <span className="absolute font-bold text-black text-center" style={{ left: "55.0%", top: "73.4%", width: "18%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.percentage}</span>
-                    <span className="absolute font-bold text-black" style={{ left: "90.0%", top: "73.4%", width: "8%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.grade}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "50%", top: "73.1%", width: "20%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.percentage}</span>
+                    <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "87%", top: "73.1%", width: "10%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.grade}</span>
+
+                    {/* QR Code — left=261.9, top=649.1, 70.1×70.1 pts */}
+                    <div className="absolute" style={{ left: "44%", top: "77.1%", width: "11.8%", height: "8.3%" }}>
+                      <svg viewBox="0 0 100 100" className="w-full h-full">
+                        <rect width="100" height="100" fill="white" />
+                        <rect x="5" y="5" width="25" height="25" fill="#0A2647" />
+                        <rect x="8" y="8" width="19" height="19" fill="white" />
+                        <rect x="11" y="11" width="13" height="13" fill="#0A2647" />
+                        <rect x="70" y="5" width="25" height="25" fill="#0A2647" />
+                        <rect x="73" y="8" width="19" height="19" fill="white" />
+                        <rect x="76" y="11" width="13" height="13" fill="#0A2647" />
+                        <rect x="5" y="70" width="25" height="25" fill="#0A2647" />
+                        <rect x="8" y="73" width="19" height="19" fill="white" />
+                        <rect x="11" y="76" width="13" height="13" fill="#0A2647" />
+                        <rect x="35" y="5" width="5" height="5" fill="#0A2647" />
+                        <rect x="45" y="5" width="5" height="5" fill="#0A2647" />
+                        <rect x="55" y="10" width="5" height="5" fill="#0A2647" />
+                        <rect x="35" y="15" width="5" height="5" fill="#0A2647" />
+                        <rect x="50" y="15" width="5" height="5" fill="#0A2647" />
+                        <rect x="40" y="25" width="5" height="5" fill="#0A2647" />
+                        <rect x="55" y="25" width="5" height="5" fill="#0A2647" />
+                        <rect x="35" y="35" width="5" height="5" fill="#0A2647" />
+                        <rect x="45" y="35" width="5" height="5" fill="#0A2647" />
+                        <rect x="65" y="35" width="5" height="5" fill="#0A2647" />
+                        <rect x="5" y="50" width="5" height="5" fill="#0A2647" />
+                        <rect x="35" y="50" width="5" height="5" fill="#0A2647" />
+                        <rect x="50" y="50" width="5" height="5" fill="#0A2647" />
+                        <rect x="75" y="50" width="5" height="5" fill="#0A2647" />
+                        <rect x="90" y="50" width="5" height="5" fill="#0A2647" />
+                        <rect x="40" y="60" width="5" height="5" fill="#0A2647" />
+                        <rect x="55" y="65" width="5" height="5" fill="#0A2647" />
+                        <rect x="70" y="65" width="5" height="5" fill="#0A2647" />
+                        <rect x="85" y="60" width="5" height="5" fill="#0A2647" />
+                        <rect x="35" y="75" width="5" height="5" fill="#0A2647" />
+                        <rect x="55" y="75" width="5" height="5" fill="#0A2647" />
+                        <rect x="80" y="75" width="5" height="5" fill="#0A2647" />
+                        <rect x="35" y="85" width="5" height="5" fill="#0A2647" />
+                        <rect x="50" y="90" width="5" height="5" fill="#0A2647" />
+                        <rect x="65" y="85" width="5" height="5" fill="#0A2647" />
+                        <rect x="75" y="90" width="5" height="5" fill="#0A2647" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
                 <p className="text-[10px] sm:text-xs text-text-gray text-center mt-2">
-                  Preview of the original certificate. Click "Download Certificate" for the full PDF.
+                  Tap certificate to zoom • Click "Download Certificate" for the full PDF
                 </p>
               </div>
+
+              {/* ── Full-Screen Zoom Modal ── */}
+              {isZoomed && (
+                <div
+                  className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-8"
+                  onClick={() => setIsZoomed(false)}
+                >
+                  <button
+                    className="absolute top-4 right-4 z-50 w-10 h-10 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center text-white transition-colors"
+                    onClick={() => setIsZoomed(false)}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                  <div
+                    className="relative max-w-4xl w-full overflow-auto"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div
+                      className="relative mx-auto"
+                      style={{ maxWidth: "774px", aspectRatio: "595.28 / 841.89", width: "100%" }}
+                    >
+                      <img
+                        src="/cert-assets/certificate-bg.jpg"
+                        alt="Certificate Template"
+                        className="w-full h-full object-fill absolute inset-0 rounded-lg"
+                      />
+                      <div className="absolute inset-0" style={{ fontSize: "clamp(8px, 1.3vw, 12px)", fontFamily: "'DejaVu Serif', Georgia, serif" }}>
+                        <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "9.5%", top: "28.6%", width: "10%" }}>{certificate.instituteCode}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "27.5%", top: "28.6%", width: "10%" }}>{certificate.session}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "42.5%", top: "28.6%", width: "15%" }}>{certificate.enrollmentNo}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "64.5%", top: "28.6%", width: "6%" }}>{certificate.rollNumber}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "80.0%", top: "28.6%", width: "8%" }}>{certificate.serialNo}</span>
+                        <div className="absolute overflow-hidden bg-white border border-blue-600/50" style={{ left: "41.8%", top: "33.5%", width: "16.1%", height: "14.8%", borderWidth: "clamp(1px, 0.15vw, 2px)" }}>
+                          <img src={certificate.photo} alt={certificate.studentName} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(certificate.studentName)}&background=0A2647&color=FFC107&size=200&bold=true`; }} />
+                        </div>
+                        <span className="absolute font-bold text-black whitespace-nowrap overflow-hidden" style={{ left: "35%", top: "55.8%", width: "35%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.studentName}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "78%", top: "55.8%", width: "18%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.dob}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap overflow-hidden" style={{ left: "26%", top: "58.7%", width: "30%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.fatherName}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap overflow-hidden" style={{ left: "70%", top: "58.7%", width: "25%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.motherName}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap overflow-hidden" style={{ left: "30%", top: "61.8%", width: "55%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.courseName}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "31%", top: "64.5%", width: "14%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.courseDuration}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "58%", top: "64.5%", width: "18%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.courseDurationFrom}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "80%", top: "64.5%", width: "16%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.courseDurationTo}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "76%", top: "67.4%", width: "18%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.courseDurationTo}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap overflow-hidden" style={{ left: "35%", top: "70.3%", width: "50%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.instituteName}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "50%", top: "73.1%", width: "20%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.percentage}</span>
+                        <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "87%", top: "73.1%", width: "10%", fontSize: "clamp(7px, 1.5vw, 14px)" }}>{certificate.grade}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* ── QR Code & Institute Stamp Section ── */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 mb-5 sm:mb-8">

@@ -38,22 +38,22 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          certNo: certificate.certificateNo,
-          session: certificate.batchYear,
+          certNo: certificate.instituteCode,
+          session: certificate.session,
           enrollmentNo: certificate.enrollmentNo,
           rollNo: certificate.rollNumber,
-          regCode: certificate.enrollmentNo,
+          regCode: certificate.serialNo,
           studentName: certificate.studentName,
           dob: certificate.dob,
           fatherName: certificate.fatherName,
           motherName: certificate.motherName,
           courseName: certificate.courseName,
           duration: certificate.courseDuration,
-          startDate: certificate.startDate,
-          endDate: certificate.endDate,
-          issueDate: certificate.issueDate,
+          startDate: certificate.courseDurationFrom,
+          endDate: certificate.courseDurationTo,
+          issueDate: certificate.courseDurationTo,
           instituteName: certificate.instituteName,
-          percentage: String(certificate.percentage),
+          percentage: certificate.percentage,
           grade: certificate.grade,
           photoUrl: certificate.photo,
           qrCodeUrl: certificate.qrCodeData,
@@ -192,7 +192,7 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
             <div className="p-4 sm:p-6 lg:p-10">
 
               {/* Quick Info Row */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-5 sm:mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 mb-5 sm:mb-8">
                 <div className="bg-light-blue rounded-lg sm:rounded-xl p-2.5 sm:p-4 text-center border border-navy/5">
                   <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-navy mx-auto mb-0.5 sm:mb-1" />
                   <p className="text-[10px] sm:text-xs text-text-gray">Duration</p>
@@ -200,8 +200,18 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
                 </div>
                 <div className="bg-light-blue rounded-lg sm:rounded-xl p-2.5 sm:p-4 text-center border border-navy/5">
                   <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-navy mx-auto mb-0.5 sm:mb-1" />
-                  <p className="text-[10px] sm:text-xs text-text-gray">Batch</p>
-                  <p className="text-xs sm:text-sm font-bold text-navy">{certificate.batchYear}</p>
+                  <p className="text-[10px] sm:text-xs text-text-gray">Session</p>
+                  <p className="text-xs sm:text-sm font-bold text-navy">{certificate.session}</p>
+                </div>
+                <div className="bg-light-blue rounded-lg sm:rounded-xl p-2.5 sm:p-4 text-center border border-navy/5">
+                  <Hash className="w-4 h-4 sm:w-5 sm:h-5 text-navy mx-auto mb-0.5 sm:mb-1" />
+                  <p className="text-[10px] sm:text-xs text-text-gray">Enrollment No</p>
+                  <p className="text-xs sm:text-sm font-bold text-navy">{certificate.enrollmentNo}</p>
+                </div>
+                <div className="bg-light-blue rounded-lg sm:rounded-xl p-2.5 sm:p-4 text-center border border-navy/5">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-navy mx-auto mb-0.5 sm:mb-1" />
+                  <p className="text-[10px] sm:text-xs text-text-gray">Roll No</p>
+                  <p className="text-xs sm:text-sm font-bold text-navy">{certificate.rollNumber}</p>
                 </div>
                 <div className="bg-light-blue rounded-lg sm:rounded-xl p-2.5 sm:p-4 text-center border border-navy/5">
                   <Award className="w-4 h-4 sm:w-5 sm:h-5 text-navy mx-auto mb-0.5 sm:mb-1" />
@@ -211,7 +221,7 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
                 <div className="bg-light-blue rounded-lg sm:rounded-xl p-2.5 sm:p-4 text-center border border-navy/5">
                   <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-navy mx-auto mb-0.5 sm:mb-1" />
                   <p className="text-[10px] sm:text-xs text-text-gray">Percentage</p>
-                  <p className={`text-xs sm:text-sm font-bold ${getGradeColor(certificate.grade)}`}>{certificate.percentage}%</p>
+                  <p className={`text-xs sm:text-sm font-bold ${getGradeColor(certificate.grade)}`}>{certificate.percentage}</p>
                 </div>
               </div>
 
@@ -222,102 +232,68 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
                   Certificate Preview
                 </h4>
 
-                {/* Certificate Visual — Looks like a real certificate */}
-                <div className="relative bg-cream-gradient rounded-lg sm:rounded-xl overflow-hidden border-2 border-navy/10 shadow-lg">
-                  <div className="absolute inset-1 sm:inset-2 border-2 border-gold/40 rounded-md sm:rounded-lg pointer-events-none" />
-                  {/* Corner decorations */}
-                  <div className="absolute top-2 left-2 sm:top-3 sm:left-3 w-5 h-5 sm:w-8 sm:h-8 border-t-2 border-l-2 border-navy/30" />
-                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3 w-5 h-5 sm:w-8 sm:h-8 border-t-2 border-r-2 border-navy/30" />
-                  <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 w-5 h-5 sm:w-8 sm:h-8 border-b-2 border-l-2 border-navy/30" />
-                  <div className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 w-5 h-5 sm:w-8 sm:h-8 border-b-2 border-r-2 border-navy/30" />
+                {/* Certificate Visual — Scaled render of actual certificate */}
+                <div
+                  className="relative rounded-lg sm:rounded-xl overflow-hidden border-2 border-navy/10 shadow-lg mx-auto"
+                  style={{ maxWidth: "595px", aspectRatio: "595.28 / 841.89" }}
+                >
+                  {/* Background image */}
+                  <img
+                    src="/cert/certificate_bg.jpg"
+                    alt="Certificate Template"
+                    className="w-full h-full object-fill absolute inset-0"
+                  />
 
-                  <div className="p-4 sm:p-8 lg:p-12 relative z-10">
+                  {/* Dynamic text overlay — positions proportional to A4 (595.28 x 841.89 pts) */}
+                  <div className="absolute inset-0" style={{ fontSize: "clamp(5px, 1.15vw, 11px)", fontFamily: "'DejaVu Serif', Georgia, serif" }}>
+                    {/* Row 1: Centre Code | Session | Enrollment No | Roll No | Serial No */}
+                    <span className="absolute font-bold text-black" style={{ left: "10.2%", top: "28.9%", width: "20%" }}>{certificate.instituteCode}</span>
+                    <span className="absolute font-bold text-black" style={{ left: "28.4%", top: "28.9%", width: "13%" }}>{certificate.session}</span>
+                    <span className="absolute font-bold text-black" style={{ left: "44%", top: "28.9%", width: "20%" }}>{certificate.enrollmentNo}</span>
+                    <span className="absolute font-bold text-black" style={{ left: "65.3%", top: "28.9%", width: "10%" }}>{certificate.rollNumber}</span>
+                    <span className="absolute font-bold text-black" style={{ left: "81.3%", top: "28.9%", width: "13%" }}>{certificate.serialNo}</span>
+
+                    {/* Student Photo */}
+                    <div className="absolute overflow-hidden bg-white border border-blue-600/50" style={{ left: "41.8%", top: "33.5%", width: "16.1%", height: "14.8%", borderWidth: "clamp(1px, 0.13vw, 1.2px)" }}>
+                      <img
+                        src={certificate.photo}
+                        alt={certificate.studentName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(certificate.studentName)}&background=0A2647&color=FFC107&size=200&bold=true`;
+                        }}
+                      />
+                    </div>
+
+                    {/* Student Name */}
+                    <span className="absolute font-bold text-black" style={{ left: "10%", top: "56%", width: "50%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.studentName}</span>
+                    {/* DOB */}
+                    <span className="absolute font-bold text-black" style={{ left: "75%", top: "56%", width: "20%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.dob}</span>
+                    {/* Father's Name */}
+                    <span className="absolute font-bold text-black" style={{ left: "10%", top: "59%", width: "45%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.fatherName}</span>
+                    {/* Mother's Name */}
+                    <span className="absolute font-bold text-black" style={{ left: "65%", top: "59%", width: "30%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.motherName}</span>
+                    {/* Course Name */}
+                    <span className="absolute font-bold text-black text-center" style={{ left: "10%", top: "62%", width: "80%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.courseName}</span>
+                    {/* Duration */}
+                    <span className="absolute font-bold text-black" style={{ left: "25%", top: "64.7%", width: "18%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.courseDuration}</span>
+                    {/* From */}
+                    <span className="absolute font-bold text-black" style={{ left: "55%", top: "64.7%", width: "18%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.courseDurationFrom}</span>
+                    {/* To */}
+                    <span className="absolute font-bold text-black" style={{ left: "78%", top: "64.7%", width: "18%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.courseDurationTo}</span>
+                    {/* Issue Date (second "To") */}
+                    <span className="absolute font-bold text-black" style={{ left: "78%", top: "67.7%", width: "18%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.courseDurationTo}</span>
                     {/* Institute Name */}
-                    <div className="text-center mb-3 sm:mb-6">
-                      <h5 className="text-base sm:text-xl lg:text-2xl font-extrabold text-navy tracking-wide">
-                        Z-TECH CAREER ACADEMY
-                      </h5>
-                      <p className="text-[8px] sm:text-[10px] lg:text-xs text-text-gray tracking-widest uppercase mt-0.5 sm:mt-1">
-                        Behind Jat School, Rishi Nagar, Gali No. 9, Kaithal, Haryana
-                      </p>
-                      <div className="mt-2 sm:mt-4 mb-2 sm:mb-4">
-                        <p className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-navy/80 tracking-[0.15em] sm:tracking-[0.2em]">
-                          CERTIFICATE
-                        </p>
-                        <p className="text-[9px] sm:text-xs lg:text-sm text-text-gray tracking-[0.1em] uppercase">
-                          of Completion
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Body */}
-                    <div className="text-center space-y-1.5 sm:space-y-3 text-xs sm:text-sm lg:text-base text-navy/80 leading-relaxed">
-                      <p>This is to certify that</p>
-                      <p className="text-lg sm:text-xl lg:text-2xl font-bold text-navy border-b-2 border-gold/60 inline-block pb-0.5 sm:pb-1">
-                        {certificate.studentName}
-                      </p>
-                      <p className="text-[10px] sm:text-xs lg:text-sm">
-                        S/o D/o <strong>{certificate.fatherName}</strong>
-                      </p>
-                      <p>has successfully completed the course</p>
-                      <p className="font-semibold text-navy text-sm sm:text-base lg:text-lg">
-                        {certificate.courseName}
-                      </p>
-                      <p className="text-xs sm:text-sm">
-                        with <span className={`font-bold ${getGradeColor(certificate.grade)}`}>{certificate.grade} Grade</span> securing <span className="font-bold text-navy">{certificate.percentage}%</span> marks
-                      </p>
-                    </div>
-
-                    {/* Details Row */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-8 text-center">
-                      <div>
-                        <p className="text-[8px] sm:text-[9px] text-text-gray uppercase tracking-wider">Roll No</p>
-                        <p className="text-[10px] sm:text-xs font-bold text-navy">{certificate.rollNumber}</p>
-                      </div>
-                      <div>
-                        <p className="text-[8px] sm:text-[9px] text-text-gray uppercase tracking-wider">Duration</p>
-                        <p className="text-[10px] sm:text-xs font-bold text-navy">{certificate.courseDuration}</p>
-                      </div>
-                      <div>
-                        <p className="text-[8px] sm:text-[9px] text-text-gray uppercase tracking-wider">Batch</p>
-                        <p className="text-[10px] sm:text-xs font-bold text-navy">{certificate.batchYear}</p>
-                      </div>
-                      <div>
-                        <p className="text-[8px] sm:text-[9px] text-text-gray uppercase tracking-wider">Cert No</p>
-                        <p className="text-[10px] sm:text-xs font-bold text-navy truncate">{certificate.certificateNo}</p>
-                      </div>
-                    </div>
-
-                    {/* Stamp Section */}
-                    <div className="flex items-end justify-between mt-4 sm:mt-8">
-                      {/* Student Signature */}
-                      <div className="text-center">
-                        <div className="border-t border-navy/30 w-20 sm:w-32 mt-6 sm:mt-10 pt-1">
-                          <p className="text-[8px] sm:text-[10px] text-text-gray">Student Signature</p>
-                        </div>
-                      </div>
-
-                      {/* Institute Stamp — Circular */}
-                      <div className="text-center">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 border-3 sm:border-4 border-navy/40 rounded-full flex items-center justify-center mx-auto">
-                          <div className="text-center">
-                            <p className="text-[6px] sm:text-[7px] font-bold text-navy/70 leading-tight">Z-TECH</p>
-                            <p className="text-[5px] sm:text-[6px] text-navy/50 leading-tight">CAREER</p>
-                            <p className="text-[5px] sm:text-[6px] text-navy/50 leading-tight">ACADEMY</p>
-                          </div>
-                        </div>
-                        <p className="text-[7px] sm:text-[8px] text-text-gray mt-0.5 sm:mt-1">Official Seal</p>
-                      </div>
-
-                      {/* Director Signature */}
-                      <div className="text-center">
-                        <div className="border-t border-navy/30 w-20 sm:w-32 mt-6 sm:mt-10 pt-1">
-                          <p className="text-[8px] sm:text-[10px] text-text-gray">Director</p>
-                        </div>
-                      </div>
-                    </div>
+                    <span className="absolute font-bold text-black text-center" style={{ left: "10%", top: "70.5%", width: "80%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.instituteName}</span>
+                    {/* Percentage */}
+                    <span className="absolute font-bold text-black text-center" style={{ left: "40%", top: "73.4%", width: "18%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.percentage}</span>
+                    {/* Grade */}
+                    <span className="absolute font-bold text-black" style={{ left: "87%", top: "73.4%", width: "8%", fontSize: "clamp(6px, 1.4vw, 13px)" }}>{certificate.grade}</span>
                   </div>
                 </div>
+                <p className="text-[10px] sm:text-xs text-text-gray text-center mt-2">
+                  Preview of the original certificate. Click "Download Certificate" for the full PDF.
+                </p>
               </div>
 
               {/* ── QR Code & Institute Stamp Section ── */}

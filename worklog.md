@@ -192,3 +192,27 @@ Stage Summary:
 - .zscripts/init-fullstack.sh → bulletproof init with watchdog (proven auto-recovery)
 - Server auto-restarts after crashes without manual intervention
 - Log file: .zscripts/init-fullstack.log
+
+---
+Task ID: 6
+Agent: Main
+Task: Fix white background behind dynamic text in marksheet PDF generation
+
+Work Log:
+- Analyzed project structure — found marksheet API route was deleted during context reset
+- Extracted marksheet template background from original PDF (SUNNY Marksheet 1st year.pdf) using PyMuPDF
+- Extracted exact text positions from original PDF (all 30+ dynamic text fields)
+- Verified both 1st and 2nd year marksheets use identical background template
+- Created /src/app/api/generate-marksheet/route.ts with SVG <text> approach
+- SVG <text> elements have NO bounding box background — renders as pure text strokes with fully transparent background
+- All positions match original PDF exactly (same x/y coordinates from PyMuPDF extraction)
+- Photo and QR code remain as HTML <img> with intentional white background
+- Build succeeded, API returns 200 with valid PDF
+- Pixel-level verification: 0 white rectangular blocks behind any text field
+- Compared generated PDF against original template background: no white patches added
+
+Stage Summary:
+- Marksheet API route recreated at /api/generate-marksheet
+- White background fix: SVG <text> instead of HTML <div>/<span> for all dynamic text
+- Background template saved at /public/cert-assets/marksheet-bg.jpg (3.1MB, 2480×3508px)
+- Verified: transparent text backgrounds in PDF output, no white boxes behind any field

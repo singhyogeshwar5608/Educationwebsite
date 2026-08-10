@@ -607,7 +607,7 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
       </div>
 
       {/* Slow ping animation for verified badge */}
-      <style jsx>{`
+      <style>{`
         @keyframes ping-slow {
           0% { transform: scale(1); opacity: 0.5; }
           50% { transform: scale(1.15); opacity: 0; }

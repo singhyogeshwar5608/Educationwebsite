@@ -1,5 +1,7 @@
 import { ArrowRight } from "lucide-react";
-import { Course, courses } from "@/data/courses";
+import { useQuery } from "@tanstack/react-query";
+import { publicService } from "@/services/public.service";
+import type { Course } from "@/data/courses";
 import CourseCard from "@/components/sections/courses/CourseCard";
 
 interface RelatedCoursesProps {
@@ -7,15 +9,20 @@ interface RelatedCoursesProps {
 }
 
 export default function RelatedCourses({ currentCourse }: RelatedCoursesProps) {
+  const { data: courses = [] } = useQuery<Course[]>({
+    queryKey: ["public-courses-all"],
+    queryFn: () => publicService.courses.list() as Promise<Course[]>,
+  });
+
   // Get courses in the same category, excluding current course
   const related = courses
-    .filter((c) => c.category === currentCourse.category && c.id !== currentCourse.id)
+    .filter((c) => c.category === currentCourse.category && c.slug !== currentCourse.slug)
     .slice(0, 4);
 
   // If not enough in same category, add from other categories
   const remaining = related.length < 4
     ? courses
-        .filter((c) => c.id !== currentCourse.id && !related.includes(c))
+        .filter((c) => c.slug !== currentCourse.slug && !related.some((r) => r.slug === c.slug))
         .slice(0, 4 - related.length)
     : [];
 
@@ -45,7 +52,7 @@ export default function RelatedCourses({ currentCourse }: RelatedCoursesProps) {
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {displayCourses.map((course) => (
-            <CourseCard key={course.id} course={course} />
+            <CourseCard key={course.slug} course={course} />
           ))}
         </div>
 
@@ -61,4 +68,3 @@ export default function RelatedCourses({ currentCourse }: RelatedCoursesProps) {
     </section>
   );
 }
-

@@ -1,4 +1,5 @@
 import { BookOpen, FileText, CheckCircle, Rocket } from "lucide-react";
+import { useAdmission } from "@/components/admission/AdmissionModal";
 
 const steps = [
   {
@@ -28,6 +29,7 @@ const steps = [
 ];
 
 export default function AdmissionSteps() {
+  const { openAdmission } = useAdmission();
   return (
     <section className="bg-white py-16 lg:py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -63,6 +65,16 @@ export default function AdmissionSteps() {
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="text-center mt-10">
+          <button
+            onClick={openAdmission}
+            className="inline-flex items-center gap-2 bg-navy hover:bg-navy-light text-white font-semibold px-8 py-3 rounded-lg transition-all hover:shadow-lg"
+          >
+            <FileText className="w-4 h-4" />
+            Apply Now
+          </button>
         </div>
       </div>
     </section>

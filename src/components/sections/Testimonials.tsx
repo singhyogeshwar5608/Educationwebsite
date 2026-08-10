@@ -1,5 +1,5 @@
-import { Star, ChevronLeft, ChevronRight, Quote } from "lucide-react";
-import { useState } from "react";
+import { Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 
 const testimonials = [
   {
@@ -26,83 +26,144 @@ const testimonials = [
     text: "The Tally Prime course gave me the practical skills I needed to land my first job. The placement assistance team was incredibly helpful throughout the process.",
     image: "https://sfile.chatglm.cn/images-ppt/3e4df0387bc6.jpg",
   },
+  {
+    name: "Neha Gupta",
+    role: "Graphic Designer",
+    company: "Wipro",
+    rating: 5,
+    text: "The DTP and Graphic Design course completely transformed my career. The hands-on projects and expert guidance helped me build an impressive portfolio.",
+    image: "https://sfile.chatglm.cn/images-ppt/6cbb07f2ed04.jpg",
+  },
+  {
+    name: "Vikram Singh",
+    role: "Data Entry Specialist",
+    company: "Genpact",
+    rating: 5,
+    text: "My typing speed improved from 20 to 60 WPM in just two months. The regular practice sessions and feedback from trainers were incredibly helpful.",
+    image: "https://sfile.chatglm.cn/images-ppt/3e4df0387bc6.jpg",
+  },
+  {
+    name: "Sneha Patel",
+    role: "Office Assistant",
+    company: "Deloitte",
+    rating: 5,
+    text: "The Office Work Training program covered everything I needed for my job. From MS Office to office etiquette, I felt fully prepared for the corporate world.",
+    image: "https://sfile.chatglm.cn/images-ppt/b7e325b53a30.png",
+  },
 ];
 
-export default function Testimonials() {
-  const [activeIndex, setActiveIndex] = useState(0);
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center justify-center gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <Star
+          key={i}
+          className={`w-4 h-4 ${i < rating ? "text-gold fill-gold" : "text-white/20"}`}
+        />
+      ))}
+    </div>
+  );
+}
 
-  const next = () => setActiveIndex((i) => (i + 1) % testimonials.length);
-  const prev = () => setActiveIndex((i) => (i - 1 + testimonials.length) % testimonials.length);
+export default function Testimonials() {
+  const [current, setCurrent] = useState(0);
+  const [cardsPerView, setCardsPerView] = useState(3);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setCardsPerView(3);
+  }, []);
+
+  const totalSlides = Math.max(0, testimonials.length - cardsPerView);
+  const slidePercent = 100 / cardsPerView;
+
+  const next = () => setCurrent((p) => Math.min(p + 1, totalSlides));
+  const prev = () => setCurrent((p) => Math.max(p - 1, 0));
 
   return (
     <section className="bg-navy py-16 lg:py-20 relative overflow-hidden">
       <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/4" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <span className="inline-block text-gold text-sm font-semibold tracking-wider uppercase mb-2">
+            Testimonials
+          </span>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-4">
             Student Success Stories
           </h2>
-          <p className="text-blue-200 text-lg max-w-xl mx-auto">
+          <p className="text-blue-200/80 text-base sm:text-lg max-w-2xl mx-auto">
             Hear from our students who have achieved their career goals with us.
           </p>
         </div>
 
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 sm:p-10 text-center relative">
-            <Quote className="w-10 h-10 text-gold/30 absolute top-6 left-6" />
-            <div className="mb-6">
-              <img
-                src={testimonials[activeIndex].image}
-                alt={testimonials[activeIndex].name}
-                className="w-20 h-20 rounded-full mx-auto border-4 border-gold/30 object-cover"
-              />
-            </div>
-            <div className="flex items-center justify-center gap-1 mb-4">
-              {Array.from({ length: testimonials[activeIndex].rating }).map((_, i) => (
-                <Star key={i} className="w-5 h-5 text-gold fill-gold" />
+        <div className="relative px-1">
+          <div className="overflow-hidden rounded-2xl" ref={containerRef}>
+            <div
+              className="flex transition-transform duration-500 ease-out gap-4 sm:gap-6"
+              style={{ transform: `translateX(-${current * slidePercent}%)` }}
+            >
+              {testimonials.map((t, i) => (
+                <div
+                  key={i}
+                  className="flex-1 min-w-0"
+                >
+                  <div className="bg-white/[0.06] backdrop-blur-sm rounded-2xl border border-white/[0.08] hover:border-gold/30 transition-colors duration-300 p-3 flex flex-col items-center text-center h-full aspect-square">
+                    <div className="w-[50px] h-[50px] rounded-full overflow-hidden ring-2 ring-gold/30 mb-2 shrink-0 shadow-lg">
+                      <img
+                        src={t.image}
+                        alt={t.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <StarRating rating={t.rating} />
+                    <p className="text-white/75 text-[10px] leading-relaxed mt-2 flex-1 line-clamp-3 italic">
+                      &ldquo;{t.text}&rdquo;
+                    </p>
+                    <div className="mt-auto pt-2 border-t border-white/10 w-full">
+                      <h4 className="text-white font-bold text-[11px]">
+                        {t.name}
+                      </h4>
+                      <p className="text-blue-200/70 text-[9px] mt-0.5">
+                        {t.role} at {t.company}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
-            <p className="text-white text-lg leading-relaxed mb-6 italic">
-              &ldquo;{testimonials[activeIndex].text}&rdquo;
-            </p>
-            <h4 className="text-white font-bold text-lg">
-              {testimonials[activeIndex].name}
-            </h4>
-            <p className="text-blue-200 text-sm">
-              {testimonials[activeIndex].role} at {testimonials[activeIndex].company}
-            </p>
           </div>
 
-          {/* Navigation */}
-          <div className="flex items-center justify-center gap-4 mt-6">
+          <button
+            onClick={prev}
+            disabled={current === 0}
+            className="absolute -left-2 sm:-left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed rounded-full flex items-center justify-center text-white transition-all backdrop-blur-sm border border-white/10 z-10"
+            aria-label="Previous"
+          >
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+          <button
+            onClick={next}
+            disabled={current >= totalSlides}
+            className="absolute -right-2 sm:-right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed rounded-full flex items-center justify-center text-white transition-all backdrop-blur-sm border border-white/10 z-10"
+            aria-label="Next"
+          >
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-center gap-2 mt-8">
+          {Array.from({ length: totalSlides + 1 }).map((_, i) => (
             <button
-              onClick={prev}
-              className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
-              aria-label="Previous testimonial"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <div className="flex gap-2">
-              {testimonials.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setActiveIndex(i)}
-                  className={`w-3 h-3 rounded-full transition-colors ${
-                    i === activeIndex ? "bg-gold" : "bg-white/30"
-                  }`}
-                  aria-label={`Go to testimonial ${i + 1}`}
-                />
-              ))}
-            </div>
-            <button
-              onClick={next}
-              className="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors"
-              aria-label="Next testimonial"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
+              key={i}
+              onClick={() => setCurrent(i)}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                i === current ? "bg-gold w-6" : "bg-white/20 hover:bg-white/40 w-2"
+              }`}
+              aria-label={`Go to slide ${i + 1}`}
+            />
+          ))}
         </div>
       </div>
     </section>

@@ -1,0 +1,44 @@
+# Z-TECH Career Academy - Hostinger root .htaccess
+# Place this file in your public_html folder (sibling of the backend/ folder)
+#
+# Deployment structure in public_html/:
+#   index.html          <- copied from dist/ (React SPA)
+#   assets/             <- copied from dist/
+#   cert/               <- copied from dist/
+#   logo.svg            <- copied from dist/
+#   robots.txt          <- copied from dist/
+#   backend/            <- Laravel backend
+#   .htaccess           <- this file
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Handle Authorization Header (required for Sanctum Bearer token auth)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Handle X-XSRF-Token Header
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # Never rewrite requests that already target the backend folder
+    RewriteRule ^backend/ - [L,NC]
+
+    # Serve /storage/* files DIRECTLY from the real storage directory.
+    # This bypasses the public/storage symlink, which shared hosting (Hostinger)
+    # often refuses to follow — that symlink restriction causes 403 Forbidden.
+    RewriteCond %{DOCUMENT_ROOT}/backend/storage/app/public/$1 -f
+    RewriteRule ^storage/(.+)$ backend/storage/app/public/$1 [L]
+
+    # API requests -> Laravel front controller
+    RewriteRule ^api/ backend/public/index.php [L]
+
+    # React SPA: serve existing files (assets, logo, etc.) directly...
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # ...and fall back to index.html for all client-side routes
+    # (e.g. /about, /courses/:slug, /admin/...)
+    RewriteRule ^ index.html [L]
+</IfModule>

@@ -41,7 +41,7 @@ export default function FAQ() {
 
   return (
     <section className="bg-light-gray py-16 lg:py-20">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <span className="text-navy-light font-semibold text-sm uppercase tracking-wider">
             FAQ

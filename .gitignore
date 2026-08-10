@@ -52,3 +52,11 @@ prompt
 server.log
 # Skills directory
 /skills/
+
+# Removed standalone admin app (use src/admin/ instead)
+/admin/
+
+# Removed dead Next.js app (project runs on Vite)
+/src/app/
+/.next/
+next-env.d.ts

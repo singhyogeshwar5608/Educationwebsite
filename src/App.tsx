@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import ScrollToTop from "@/components/ScrollToTop";
 import Home from "@/pages/Home";
 import About from "@/pages/About";
 import Courses from "@/pages/Courses";
@@ -13,6 +14,7 @@ import { AdmissionProvider } from "@/components/admission/AdmissionModal";
 export default function App() {
   return (
     <AdmissionProvider>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />

@@ -74,7 +74,7 @@ class CourseController extends Controller
     {
         $validated = $this->validateCourse($request);
 
-        $course = Course::create($this->coursePayload($validated, true));
+        $course = Course::create($this->coursePayload($validated, null));
 
         $this->syncNested($course, $validated);
         $this->syncGallery($course, $request);
@@ -86,7 +86,7 @@ class CourseController extends Controller
     {
         $validated = $this->validateCourse($request, $course);
 
-        $course->update($this->coursePayload($validated, false));
+        $course->update($this->coursePayload($validated, $course));
 
         $this->syncNested($course, $validated);
         $this->syncGallery($course, $request);
@@ -96,6 +96,16 @@ class CourseController extends Controller
 
     public function destroy(Course $course): JsonResponse
     {
+        // Students.course_id is NOT NULL with restrictOnDelete(), so MySQL blocks
+        // deleting a course that still has enrolled students. Refuse the delete with
+        // a clear message instead of letting the raw SQLSTATE error surface.
+        $enrolled = $course->students()->count();
+        if ($enrolled > 0) {
+            return response()->json([
+                'message' => "Cannot delete this course — {$enrolled} student(s) are enrolled in it. Move or delete those students first, or deactivate the course instead.",
+            ], 409);
+        }
+
         // Remove physical gallery image files BEFORE the course delete —
         // the course_gallery rows are removed by the DB cascade, but the
         // actual files in storage/app/public/course-gallery would otherwise
@@ -132,7 +142,7 @@ class CourseController extends Controller
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'code' => ['required', 'string', 'max:255', Rule::unique('courses', 'slug')->ignore($course?->id)],
+            'code' => ['required', 'string', 'max:255', Rule::unique('courses', 'code')->ignore($course?->id)],
             'subtitle' => ['nullable', 'string', 'max:255'],
             'category' => ['nullable', 'string', 'max:255'],
             'category_id' => ['nullable', 'integer', 'exists:course_categories,id'],
@@ -161,7 +171,7 @@ class CourseController extends Controller
         return $data;
     }
 
-    private function coursePayload(array $data, bool $isCreate = false): array
+    private function coursePayload(array $data, ?Course $course = null): array
     {
         $categoryId = $data['category_id'] ?? null;
 
@@ -172,8 +182,11 @@ class CourseController extends Controller
 
         $payload = [
             'title' => $data['name'],
+            'code' => $data['code'],
+            // Slug is derived from the code but must stay URL-safe, so special
+            // characters (e.g. "#") are stripped and digits kept (e.g. "ADCA-01#" → "adca-01").
+            'slug' => $this->uniqueSlug($data['code'] ?? $data['name'], $course),
             'subtitle' => $data['subtitle'] ?? null,
-            'slug' => Str::slug($data['code'] ?? $data['name']),
             'category_id' => $categoryId,
             'duration' => $data['duration'] ?? null,
             'duration_months' => $data['durationMonths'] ?? null,
@@ -189,19 +202,19 @@ class CourseController extends Controller
         // unless the field is explicitly provided in the request.
         if (array_key_exists('featured', $data)) {
             $payload['featured'] = filter_var($data['featured'], FILTER_VALIDATE_BOOL);
-        } elseif ($isCreate) {
+        } elseif (($course === null)) {
             $payload['featured'] = false;
         }
 
         if (array_key_exists('popular', $data)) {
             $payload['popular'] = filter_var($data['popular'], FILTER_VALIDATE_BOOL);
-        } elseif ($isCreate) {
+        } elseif (($course === null)) {
             $payload['popular'] = false;
         }
 
         if (array_key_exists('level', $data)) {
             $payload['level'] = $data['level'] ?? 'Beginner';
-        } elseif ($isCreate) {
+        } elseif (($course === null)) {
             $payload['level'] = 'Beginner';
         }
 
@@ -209,11 +222,31 @@ class CourseController extends Controller
         // unless a status is explicitly provided in the request.
         if (array_key_exists('status', $data)) {
             $payload['active'] = ($data['status'] ?? 'Active') === 'Active';
-        } elseif ($isCreate) {
+        } elseif (($course === null)) {
             $payload['active'] = true;
         }
 
         return $payload;
+    }
+
+    /**
+     * Build a URL-safe slug from a code that may contain special characters
+     * (e.g. "ADCA-01#" → "adca-01"). Ensures the slug is unique in the table,
+     * appending a numeric suffix if needed — codes like "ADCA-01#" and "ADCA-01!"
+     * both slugify to "adca-01", so this keeps the slug column collision-free.
+     */
+    private function uniqueSlug(string $code, ?Course $ignore = null): string
+    {
+        $base = Str::slug($code) ?: Str::slug('course');
+        $slug = $base;
+        $i = 2;
+        while (Course::where('slug', $slug)
+            ->when($ignore, fn ($q) => $q->where('id', '!=', $ignore->id))
+            ->exists()) {
+            $slug = $base . '-' . $i;
+            $i++;
+        }
+        return $slug;
     }
 
     private function syncNested(Course $course, array $data): void
@@ -329,3 +362,4 @@ class CourseController extends Controller
         }
     }
 }
+

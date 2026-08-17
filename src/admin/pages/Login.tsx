@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Mail, Lock, Eye, EyeOff, Shield, ArrowLeft } from 'lucide-react'
 import { authService } from '@/services/auth.service'
+import logoImg from '@/assets/Logo/Logo.png'
 
 interface LoginProps {
   onLogin: () => void
@@ -94,9 +95,9 @@ function Login({ onLogin }: LoginProps) {
               }}
             >
               <img
-                src="/logo.svg"
-                alt="Z-Tech Career Academy Logo"
-                className="w-16 h-16"
+                src={logoImg}
+                alt="Z-TECH Career Academy Logo"
+                className="w-16 h-16 object-contain"
               />
             </div>
           </div>
@@ -152,13 +153,13 @@ function Login({ onLogin }: LoginProps) {
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center gap-3 mb-10">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #0A2647, #144272)' }}
+              className="w-12 h-12 rounded-xl flex items-center justify-center bg-white"
+              style={{ boxShadow: '0 4px 12px rgba(10, 38, 71, 0.15)' }}
             >
               <img
-                src="/logo.svg"
+                src={logoImg}
                 alt="Z-Tech Logo"
-                className="w-8 h-8"
+                className="w-8 h-8 object-contain"
               />
             </div>
             <div>

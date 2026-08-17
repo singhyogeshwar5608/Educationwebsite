@@ -82,7 +82,7 @@ class Presenters
             'id' => (string) $course->id,
             'name' => $course->title,
             'subtitle' => $course->subtitle,
-            'code' => strtoupper($course->slug),
+            'code' => $course->code ?? strtoupper($course->slug),
             'category' => $course->category?->name,
             'category_id' => $course->category_id,
             'duration' => $course->duration,

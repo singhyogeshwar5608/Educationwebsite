@@ -160,3 +160,7 @@
 
 .skeleton { background: #E0E0E0; animation: skeleton-loading 1.2s ease-in-out infinite; }
 @keyframes skeleton-loading { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+/* Hide scrollbar while keeping scroll — used by custom searchable dropdowns */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

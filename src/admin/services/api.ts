@@ -56,7 +56,7 @@ export interface StudentCertificate {
 export interface Course {
   id: string; name: string; code: string; subtitle?: string; category: string; category_id?: number | string;
   duration: string; courseFee: number; registrationFee: number;
-  eligibility: string; description: string;
+  level?: string; eligibility: string; description: string;
   pdf?: string; certificateTemplate?: string; marksheetTemplate?: string;
   status: 'Active' | 'Inactive'; featured?: boolean; subjects: Subject[];
   thumbnail?: string | null;
@@ -83,6 +83,7 @@ export interface AdmissionRequest {
 
 export interface Result {
   id: string; studentId: string; studentName: string; course: string;
+  rollNo?: string;
   subjects: { name: string; marks: number; maxMarks: number; passingMarks: number }[];
   total: number; maxTotal: number; percentage: number;
   grade: string; pass: boolean; publishedDate: string;

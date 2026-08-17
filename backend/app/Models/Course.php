@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Course extends Model
 {
     protected $fillable = [
-        'slug', 'title', 'subtitle', 'short_description', 'long_description',
+        'slug', 'code', 'title', 'subtitle', 'short_description', 'long_description',
         'duration', 'duration_months', 'course_fee', 'registration_fee',
         'level', 'eligibility', 'certificate_template',
         'marksheet_template', 'course_pdf', 'featured', 'popular', 'active',

@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Search, Eye, Pencil, Trash2, Users, GraduationCap, UserCheck, Loader2, AlertCircle, User, BookOpen, Clock, Mail, FileText, Award } from 'lucide-react'
-import { mockCourses, getCourseDetails } from '@/admin/services/api'
-import type { Student } from '@/admin/services/api'
+import { Search, Eye, Pencil, Trash2, Users, GraduationCap, UserCheck, Loader2, AlertCircle, User, BookOpen, Clock, Mail, FileText, Award, ChevronDown, Layers, Check } from 'lucide-react'
+import { getCourseDetails, getCourses } from '@/admin/services/api'
+import type { Student, Course } from '@/admin/services/api'
 import { studentsService } from '@/services/students.service'
 import { useToast } from '@/admin/components/Toast'
 import ConfirmDialog from '@/admin/components/ConfirmDialog'
@@ -60,6 +60,112 @@ function getStatusBadge(status: Student['status']) {
   }
 }
 
+function SearchableCourseSelect({
+  courses,
+  value,
+  onChange,
+  placeholder = 'All Courses',
+  showCode = false,
+  className = '',
+}: {
+  courses: Course[]
+  value: string
+  onChange: (id: string) => void
+  placeholder?: string
+  showCode?: boolean
+  className?: string
+}) {
+  const [open, setOpen] = useState(false)
+  const [q, setQ] = useState('')
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [])
+
+  const selected = courses.find((c) => c.id === value)
+  const query = q.trim().toLowerCase()
+  const filtered = query
+    ? courses.filter((c) => c.name.toLowerCase().includes(query) || c.code.toLowerCase().includes(query))
+    : courses
+
+  return (
+    <div ref={ref} className={`relative ${className}`}>
+      <button
+        type="button"
+        onClick={() => { setOpen((o) => !o); setQ('') }}
+        className={`w-full rounded-lg pl-2 pr-2 py-2 text-sm text-left flex items-center justify-between gap-1.5 bg-white outline-none transition-all border shadow-sm hover:shadow-md ${open
+          ? 'border-navy ring-2 ring-navy/15'
+          : 'border-gray-200 hover:border-navy/40'} ${value ? 'text-navy font-semibold' : 'text-gray-400'}`}
+      >
+        <span className="truncate flex items-center gap-1.5 min-w-0">
+          <span className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors ${value ? 'bg-gold/20 text-gold' : 'bg-navy/5 text-navy/40'}`}>
+            <GraduationCap className="w-3 h-3" />
+          </span>
+          <span className="truncate">{selected ? (showCode ? `${selected.name} — ${selected.code}` : selected.name) : placeholder}</span>
+        </span>
+        <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${open ? 'rotate-180 text-navy' : 'text-gray-400'}`} />
+      </button>
+
+      {open && (
+        <div className="absolute z-30 mt-1.5 w-full min-w-60 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden animate-slide-in">
+          <div className="p-2.5 border-b border-gray-100 bg-light-blue">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-navy/50 mb-1.5 px-1">Filter by course</p>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
+              <input
+                autoFocus
+                type="text"
+                placeholder="Search course..."
+                className="w-full rounded-lg border border-gray-200 pl-8 pr-2 py-1.5 text-xs bg-white outline-none transition-colors focus:border-navy focus:ring-2 focus:ring-navy/10 placeholder:text-gray-400"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="max-h-56 overflow-y-auto no-scrollbar py-1">
+            <button
+              type="button"
+              onClick={() => { onChange(''); setOpen(false) }}
+              className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2 transition-colors ${!value ? 'font-bold text-navy bg-gold/10' : 'text-gray-600 hover:bg-navy/5'}`}
+            >
+              <Layers className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+              <span className="truncate">{placeholder}</span>
+            </button>
+            {filtered.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => { onChange(c.id); setOpen(false) }}
+                className={`w-full px-3 py-2 text-left text-xs flex items-center gap-2 transition-colors ${value === c.id ? 'font-bold text-navy bg-gold/10' : 'text-gray-600 hover:bg-navy/5'}`}
+              >
+                <span className="w-3.5 h-3.5 shrink-0 flex items-center justify-center">
+                  {value === c.id ? <Check className="w-3.5 h-3.5 text-gold" /> : <span className="w-1.5 h-1.5 rounded-full bg-gray-200" />}
+                </span>
+                <span className="truncate flex-1">{c.name}</span>
+                <span className="text-[10px] text-gray-400 shrink-0 font-mono">{c.code}</span>
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <div className="px-4 py-6 text-center">
+                <Search className="w-5 h-5 text-gray-200 mx-auto mb-1.5" />
+                <p className="text-[11px] text-gray-400">No courses found for "{q}"</p>
+              </div>
+            )}
+          </div>
+          <div className="px-3 py-1.5 border-t border-gray-100 bg-gray-50 text-[10px] text-gray-400">
+            {filtered.length} course{filtered.length === 1 ? '' : 's'} found
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function Students() {
   const [search, setSearch] = useState('')
   const [courseFilter, setCourseFilter] = useState('')
@@ -101,6 +207,11 @@ function Students() {
   const { data: students = [], isLoading, isError, refetch } = useQuery<Student[]>({
     queryKey: ['students'],
     queryFn: () => studentsService.list() as Promise<Student[]>,
+  })
+
+  const { data: courses = [] } = useQuery<Course[]>({
+    queryKey: ['admin-courses'],
+    queryFn: () => getCourses() as Promise<Course[]>,
   })
 
   useEffect(() => {
@@ -262,24 +373,25 @@ function Students() {
         {/* Filter controls */}
         <div className="flex flex-col lg:flex-row gap-2 mb-4">
           <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-            <input type="text" placeholder="Search by name, email, course, roll no..." className="form-input pl-8" value={search}
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input type="text" placeholder="Search by name, email, course, roll no..." className="w-full rounded-lg border border-gray-200 pl-9 pr-3 py-2 text-sm text-gray-900 bg-white outline-none transition-all shadow-sm placeholder:text-gray-400 focus:border-navy focus:ring-2 focus:ring-navy/15" value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1) }} />
           </div>
-          <select className="form-select lg:w-44" value={courseFilter}
-            onChange={(e) => { setCourseFilter(e.target.value); setCurrentPage(1) }}>
-            <option value="">All Courses</option>
-            {mockCourses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <SearchableCourseSelect
+            courses={courses}
+            value={courseFilter}
+            onChange={(id) => { setCourseFilter(id); setCurrentPage(1) }}
+            className="lg:w-56"
+          />
           <div className="grid grid-cols-2 gap-2 lg:flex">
-            <select className="form-select lg:w-36" value={statusFilter}
+            <select className="form-select lg:w-36 h-[38px] px-2.5" value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1) }}>
               <option value="">All Status</option>
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
               <option value="Graduated">Graduated</option>
             </select>
-            <select className="form-select lg:w-32" value={genderFilter}
+            <select className="form-select lg:w-32 h-[38px] px-2.5" value={genderFilter}
               onChange={(e) => { setGenderFilter(e.target.value); setCurrentPage(1) }}>
               <option value="">All Gender</option>
               <option value="Male">Male</option>
@@ -453,10 +565,14 @@ function Students() {
             </div>
             <div className="mt-4">
               <label className={labelCls}>Course <span className="text-red-500">*</span></label>
-              <select className={inputCls} value={form.courseId} onChange={(e) => handleFormChange('courseId', e.target.value)}>
-                <option value="">Select Course</option>
-                {mockCourses.map((c) => <option key={c.id} value={c.id}>{c.name} — {c.code}</option>)}
-              </select>
+              <SearchableCourseSelect
+                courses={courses}
+                value={form.courseId}
+                onChange={(id) => handleFormChange('courseId', id)}
+                placeholder="Select Course"
+                showCode
+                className="w-full"
+              />
               <FieldError message={formErrors.courseId} />
             </div>
             {selectedCourseDetails && (

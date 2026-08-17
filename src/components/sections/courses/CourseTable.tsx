@@ -31,10 +31,10 @@ export default function CourseTable({ courses }: CourseTableProps) {
                   {/* Course */}
                   <td className="px-5 py-4">
                     <div className="min-w-0">
-                      <p className="font-bold text-navy leading-snug truncate max-w-[260px]">
+                      <p className="font-bold text-navy leading-snug">
                         {course.title}
                       </p>
-                      <p className="text-xs text-text-gray mt-0.5 truncate max-w-[260px]">
+                      <p className="text-xs text-text-gray mt-0.5">
                         {course.subtitle}
                       </p>
                     </div>

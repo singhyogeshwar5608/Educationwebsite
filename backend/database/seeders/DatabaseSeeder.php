@@ -61,6 +61,7 @@ class DatabaseSeeder extends Seeder
             $course = Course::create([
                 'title' => $courseData['title'],
                 'slug' => $courseData['slug'],
+                'code' => strtoupper($courseData['slug']),
                 'subtitle' => "Professional {$courseData['title']} training",
                 'short_description' => "Master {$courseData['title']} with hands-on practical training at Z-TECH Career Academy.",
                 'long_description' => "This comprehensive {$courseData['title']} program prepares students for real-world careers with practical, project-based learning. Students receive personal attention and industry-relevant skills training from experienced faculty.",

@@ -42,7 +42,7 @@ export default function CertificateTemplate({ certificate }: CertificateTemplate
     >
       {/* ── Background Image (the certificate design with border, header, labels) ── */}
       <img
-        src="/cert-assets/certificate-bg.jpg"
+        src="/cert-assets/certificate.jpeg"
         alt=""
         style={{
           position: "absolute",

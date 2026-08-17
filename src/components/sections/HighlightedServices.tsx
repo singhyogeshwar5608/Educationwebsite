@@ -15,6 +15,8 @@ import {
   ImageIcon,
   ArrowRight,
   Loader2,
+  Clock,
+  IndianRupee,
 } from "lucide-react";
 import { publicService } from "@/services/public.service";
 import type { Course } from "@/data/courses";
@@ -114,6 +116,7 @@ function CourseCard({ course }: { course: Course }) {
       }}
       className={`group relative bg-white rounded-[22px] border-2 ${style.border} ${style.shadow} hover:shadow-xl overflow-hidden flex flex-col h-full`}
     >
+      {false && (
       <div className="relative h-28 sm:h-32 lg:h-36 overflow-hidden shrink-0 bg-white">
         {firstImage ? (
           <img
@@ -136,6 +139,7 @@ function CourseCard({ course }: { course: Course }) {
           </div>
         )}
       </div>
+      )}
 
       <div className="flex flex-col flex-1 p-3 sm:p-5 lg:p-6 min-h-0">
         <div className="flex items-start justify-between mb-2 sm:mb-3">
@@ -146,12 +150,34 @@ function CourseCard({ course }: { course: Course }) {
           </div>
         </div>
 
-        <h3 className="text-xs sm:text-base lg:text-lg font-bold text-navy mb-0.5 sm:mb-1.5 leading-tight sm:leading-snug line-clamp-2 min-h-[2.5em] sm:min-h-[2.75em] lg:min-h-[2.75em]">
+        <h3 className="text-sm sm:text-lg lg:text-xl font-bold text-navy mb-0.5 sm:mb-1.5 leading-tight sm:leading-snug line-clamp-2 min-h-[2.5em] sm:min-h-[2.75em] lg:min-h-[2.75em]">
           {course.title}
         </h3>
-        <p className="text-text-gray text-[10px] sm:text-xs lg:text-sm leading-relaxed flex-1 line-clamp-2 sm:line-clamp-3">
-          {truncateWords(course.subtitle || course.description, 15)}
+        {course.subtitle && (
+          <p className="text-[12px] sm:text-sm font-semibold text-navy-light mb-1 sm:mb-1.5 leading-snug line-clamp-1">
+            {course.subtitle}
+          </p>
+        )}
+        <p className="text-text-gray text-[12px] sm:text-sm lg:text-base leading-relaxed flex-1 line-clamp-2 sm:line-clamp-3">
+          {truncateWords(course.description, 18)}
         </p>
+
+        <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-2.5 sm:mt-3 mb-1">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-light-blue border border-navy/10 rounded-lg px-2 sm:px-2.5 py-1.5 sm:py-2 min-w-0">
+            <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-navy-light shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[8px] sm:text-[10px] text-gray-400 uppercase tracking-wide font-semibold leading-none">Duration</p>
+              <p className="text-[10px] sm:text-xs font-bold text-navy truncate leading-tight mt-0.5">{course.duration}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-green/5 border border-green/20 rounded-lg px-2 sm:px-2.5 py-1.5 sm:py-2 min-w-0">
+            <IndianRupee className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[8px] sm:text-[10px] text-gray-400 uppercase tracking-wide font-semibold leading-none">Course Fee</p>
+              <p className="text-[10px] sm:text-xs font-bold text-green truncate leading-tight mt-0.5">₹{course.price}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="px-3 sm:px-5 lg:px-6 pb-3 sm:pb-5 lg:pb-6">
@@ -228,11 +254,25 @@ export default function HighlightedServices() {
             <Loader2 className="w-8 h-8 animate-spin" />
           </div>
         ) : courses.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-8">
-            {courses.map((course) => (
-              <CourseCard key={course.slug} course={course} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-8 px-2.5 sm:px-0">
+              {courses.slice(0, 12).map((course) => (
+                <CourseCard key={course.slug} course={course} />
+              ))}
+            </div>
+
+            {courses.length > 12 && (
+              <div className="text-center mt-10">
+                <Link
+                  to="/courses"
+                  className="inline-flex items-center gap-2 bg-transparent border-2 border-white/30 text-white font-bold px-8 py-3 rounded-lg transition-all hover:bg-white hover:text-navy hover:border-white hover:shadow-xl"
+                >
+                  View More Courses
+                  <ArrowRight className="w-5 h-5" />
+                </Link>
+              </div>
+            )}
+          </>
         ) : (
           <p className="text-center text-blue-100/70 py-12">
             No courses available right now.
@@ -246,13 +286,13 @@ export default function HighlightedServices() {
           transition={{ delay: 0.3, duration: 0.6 }}
           className="text-center mt-12"
         >
-          <a
-            href="#contact"
+          <Link
+            to="/contact"
             className="inline-flex items-center gap-2 bg-gold hover:bg-gold-light text-navy font-bold px-8 py-3.5 rounded-lg transition-all hover:shadow-xl hover:shadow-gold/20 text-lg"
           >
             Get Started Today
             <ArrowRight className="w-5 h-5" />
-          </a>
+          </Link>
         </motion.div>
       </div>
     </section>

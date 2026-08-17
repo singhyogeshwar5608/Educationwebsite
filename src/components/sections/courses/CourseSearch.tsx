@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Search, SlidersHorizontal, X, Check } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Search, SlidersHorizontal, X, Check, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface CourseSearchProps {
@@ -28,7 +28,19 @@ export default function CourseSearch({
   categories,
 }: CourseSearchProps) {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
+  const categoryRef = useRef<HTMLDivElement>(null);
   const hasFilters = activeCategory !== "All Courses" || activeLevel !== "All Levels" || searchQuery;
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) {
+        setCategoryOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const clearAll = () => {
     onCategoryChange("All Courses");
@@ -86,16 +98,63 @@ export default function CourseSearch({
           </button>
         </div>
 
-        {/* Category Chips */}
-        <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 hide-scrollbar">
+        {/* Category Select - Mobile (custom dropdown with scrollable list) */}
+        <div className="mt-4 md:hidden">
+          <label className="block text-xs font-semibold text-text-gray mb-1.5">Category</label>
+          <div ref={categoryRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setCategoryOpen((o) => !o)}
+              className={`w-full bg-light-gray border border-gray-200 rounded-xl px-4 py-3 text-sm font-medium text-navy focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-all flex items-center justify-between gap-2 ${
+                categoryOpen ? "border-gold ring-2 ring-gold/50" : ""
+              }`}
+            >
+              <span className="truncate">{activeCategory}</span>
+              <ChevronDown className={`w-4 h-4 text-text-gray shrink-0 transition-transform ${categoryOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            <AnimatePresence>
+              {categoryOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute left-0 right-0 z-40 mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl overflow-hidden"
+                >
+                  <div className="max-h-72 overflow-y-auto py-1">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => { onCategoryChange(cat); setCategoryOpen(false); }}
+                        className={`w-full px-4 py-2.5 text-sm text-left flex items-center justify-between gap-2 transition-colors ${
+                          activeCategory === cat
+                            ? "bg-navy text-white font-semibold"
+                            : "text-navy hover:bg-navy/5"
+                        }`}
+                      >
+                        <span className="truncate">{cat}</span>
+                        {activeCategory === cat && <Check className="w-4 h-4 shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Category Chips - Desktop */}
+        <div className="hidden md:flex flex-wrap items-center gap-2.5 mt-5">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => onCategoryChange(cat)}
-              className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0 ${
+              className={`whitespace-nowrap px-4.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 border shadow-sm ${
                 activeCategory === cat
-                  ? "bg-navy text-white shadow-md"
-                  : "bg-light-gray text-text-gray hover:bg-navy/10 hover:text-navy"
+                  ? "bg-navy text-white border-navy shadow-md shadow-navy/25"
+                  : "bg-[#F5F8FF] text-navy border-gray-200/70 hover:bg-navy/10 hover:border-navy/20 hover:shadow-md hover:-translate-y-0.5"
               }`}
             >
               {cat}

@@ -51,7 +51,9 @@ class ResultController extends Controller
         $student = Student::with('course')->findOrFail($validated['studentId']);
 
         $percentage = $validated['percentage'] ?? $this->calculatePercentage($validated['subjects']);
-        $pass = $validated['pass'] ?? ($percentage >= 33);
+        $failedCount = count(array_filter($validated['subjects'], fn ($s) => ($s['marks'] ?? 0) < ($s['passingMarks'] ?? 33)));
+        // Pass rule: a student is PASS unless they fail 3 or more subjects.
+        $pass = $validated['pass'] ?? ($failedCount < 3);
         $grade = $validated['grade'] ?? $this->calculateGrade($percentage);
         $resultStatus = $pass ? ($percentage >= 75 ? 'DISTINCTION' : 'PASS') : 'FAIL';
 

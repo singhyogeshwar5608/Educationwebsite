@@ -17,11 +17,20 @@ export default function CourseGrid() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All Courses");
   const [activeLevel, setActiveLevel] = useState("All Levels");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const ITEMS_PER_PAGE = 10;
+  const isAllFilter = activeCategory === "All Courses";
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(t);
   }, [searchQuery]);
+
+  // Reset pagination whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeCategory, activeLevel, debouncedSearch]);
 
   // Pre-select the category from the ?category= URL param (e.g. clicked in the navbar dropdown)
   useEffect(() => {
@@ -64,6 +73,52 @@ export default function CourseGrid() {
     setSearchParams({}, { replace: true });
   };
 
+  // Pagination only applies on the "All Courses" filter; category-level
+  // filtering shows every matching course without pagination.
+  const totalPages = isAllFilter ? Math.max(1, Math.ceil(courses.length / ITEMS_PER_PAGE)) : 1;
+  const paginatedCourses = isAllFilter
+    ? courses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+    : courses;
+  const startCount = isAllFilter ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 1;
+  const endCount = isAllFilter ? Math.min(currentPage * ITEMS_PER_PAGE, courses.length) : courses.length;
+
+  const renderPagination = () => {
+    if (!isAllFilter || totalPages <= 1) return null;
+    return (
+      <div className="flex items-center justify-center gap-4 mt-10">
+        <button
+          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          disabled={currentPage === 1}
+          className="px-4 py-2 text-sm font-semibold rounded-lg border border-navy/20 text-navy hover:bg-navy hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        <div className="flex items-center gap-2">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+            <button
+              key={pg}
+              onClick={() => setCurrentPage(pg)}
+              className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all ${
+                pg === currentPage
+                  ? "bg-navy text-white shadow-md shadow-navy/25"
+                  : "bg-white text-navy border border-navy/20 hover:bg-navy/5"
+              }`}
+            >
+              {pg}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          disabled={currentPage === totalPages}
+          className="px-4 py-2 text-sm font-semibold rounded-lg border border-navy/20 text-navy hover:bg-navy hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+      </div>
+    );
+  };
+
   return (
     <>
       <CourseSearch
@@ -104,7 +159,7 @@ export default function CourseGrid() {
             <>
               {/* Mobile card grid (below md) */}
               <div className="md:hidden grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-                {courses.map((course, index) => (
+                {paginatedCourses.map((course, index) => (
                   <AnimateOnScroll key={course.slug} delay={index * 80}>
                     <CourseCard course={course} index={index} />
                   </AnimateOnScroll>
@@ -113,8 +168,17 @@ export default function CourseGrid() {
 
               {/* Desktop/tablet table view (md and up) */}
               <div className="hidden md:block">
-                <CourseTable courses={courses} />
+                <CourseTable courses={paginatedCourses} />
               </div>
+
+              {/* Showing X–Y of Z */}
+              {isAllFilter && courses.length > ITEMS_PER_PAGE && (
+                <p className="text-center text-sm text-text-gray mt-6">
+                  Showing {startCount}–{endCount} of {courses.length} courses
+                </p>
+              )}
+
+              {renderPagination()}
             </>
           ) : (
             <div className="text-center py-16">

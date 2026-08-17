@@ -7,6 +7,7 @@ import {
   Search, Plus, Pencil, Trash2, BookOpen, Layers,
   X, Loader2, CheckCircle2, AlertCircle, ChevronDown, Check,
   FileText, GraduationCap, Clock, Banknote, Images, Upload, Star,
+  RefreshCw, Sparkles,
 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { createPortal } from 'react-dom'
@@ -52,6 +53,7 @@ interface CourseFormValues {
   duration: string
   courseFee: string
   registrationFee: string
+  level: string
   eligibility: string
   description: string
   featured: boolean
@@ -67,6 +69,7 @@ const courseSchema = z.object({
   duration: z.string().min(1, 'Duration is required'),
   courseFee: z.string().min(1, 'Course fee is required'),
   registrationFee: z.string().min(1, 'Registration fee is required'),
+  level: z.string().min(1, 'Please select a level'),
   eligibility: z.string().min(1, 'Eligibility is required'),
   description: z.string().optional(),
   featured: z.boolean().optional(),
@@ -78,8 +81,38 @@ type CourseFormValues_ = z.infer<typeof courseSchema>
 
 const defaultValues: CourseFormValues_ = {
   name: '', code: '', subtitle: '', categoryId: '', duration: '', courseFee: '', registrationFee: '',
-  eligibility: '', description: '', featured: false, subjectIds: [],
+  level: 'Beginner', eligibility: '', description: '', featured: false, subjectIds: [],
   subjectSyllabus: {},
+}
+
+// ─── Course code auto-generation ─────────────────────
+
+const CODE_STOP_WORDS = new Set(['of', 'the', 'and', 'in', 'for', 'to', 'a', 'an', 'on', 'at', 'with', '&'])
+const CODE_SPECIALS = ['#', '@', '!', '$', '&']
+
+function generateCourseCode(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  if (!words.length) return ''
+  const meaningful = words.filter((w) => !CODE_STOP_WORDS.has(w.toLowerCase()))
+  const source = meaningful.length ? meaningful : words
+  const base = source.map((w) => w[0]).join('').toUpperCase()
+  const acronym = base.length >= 2 ? base : words.join('').slice(0, 4).toUpperCase()
+  const special = CODE_SPECIALS[acronym.charCodeAt(0) % CODE_SPECIALS.length]
+  return `${acronym}-01${special}`
+}
+
+function uniqueCourseCode(name: string, existingCodes: string[]): string {
+  const base = generateCourseCode(name)
+  if (!base) return ''
+  const taken = existingCodes.map((c) => c.trim().toUpperCase())
+  const [prefix, special] = [base.slice(0, -3), base.slice(-1)]
+  let i = 1
+  let candidate = base
+  while (taken.includes(candidate)) {
+    i++
+    candidate = `${prefix}-${String(i).padStart(2, '0')}${special}`
+  }
+  return candidate
 }
 
 // ─── Curriculum editor — subjects with shared per-subject syllabus ─────────────
@@ -579,12 +612,15 @@ function Courses() {
 
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const codeEdited = useRef(false)
 
   const {
     control,
     register,
     handleSubmit,
     reset,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<CourseFormValues_>({
     resolver: zodResolver(courseSchema),
@@ -595,6 +631,8 @@ function Courses() {
     queryKey: ['courses'],
     queryFn: () => coursesService.list() as Promise<Course[]>,
   })
+
+  const existingCodes = useMemo(() => courses.map((c) => c.code), [courses])
 
   const categoriesQuery = useQuery<any[]>({
     queryKey: ['course-categories'],
@@ -639,6 +677,8 @@ function Courses() {
     setTab('basic')
     reset(defaultValues)
     resetGalleryState()
+    codeEdited.current = false
+    refetch()
     setShowAddModal(true)
   }
 
@@ -648,6 +688,7 @@ function Courses() {
     setShowEditModal(true)
     setLoadingEdit(true)
     resetGalleryState()
+    codeEdited.current = true
     try {
       const full = await coursesService.show(Number(course.id))
       setGalleryExisting(full.gallery || [])
@@ -659,6 +700,7 @@ function Courses() {
         duration: course.duration || '',
         courseFee: course.courseFee != null ? String(course.courseFee) : '',
         registrationFee: course.registrationFee != null ? String(course.registrationFee) : '',
+        level: course.level || 'Beginner',
         eligibility: Array.isArray(course.eligibility) ? course.eligibility[0] || '' : course.eligibility || '',
         description: course.description || '',
         featured: Boolean(course.featured),
@@ -677,6 +719,17 @@ function Courses() {
 
   const onSubmit = async (values: CourseFormValues_) => {
     setSubmitting(true)
+    const dup = existingCodes.some((code) =>
+      code.trim().toUpperCase() === values.code.trim().toUpperCase() && (!editingCourse || editingCourse.code.trim().toUpperCase() !== values.code.trim().toUpperCase())
+    )
+    if (dup) {
+      setSubmitting(false)
+      setTab('basic')
+      setValue('code', uniqueCourseCode(getValues('name'), existingCodes), { shouldValidate: true })
+      toast(`Course code "${values.code}" is already taken — a unique code has been generated.`, 'error')
+      return
+    }
+
     const subjectSyllabus = Object.entries(values.subjectSyllabus || {}).reduce((acc: Record<string, TopicRow[]>, [subjectId, rows]) => {
       const cleaned = (rows || []).filter((r) => r.topic.trim()).map((r) => ({ topic: r.topic.trim(), description: r.description.trim() }))
       if (cleaned.length) acc[subjectId] = cleaned
@@ -692,6 +745,7 @@ function Courses() {
     fd.append('duration', values.duration)
     fd.append('courseFee', String(Number(values.courseFee) || 0))
     fd.append('registrationFee', String(Number(values.registrationFee) || 0))
+    fd.append('level', values.level || 'Beginner')
     fd.append('description', values.description || '')
     fd.append('eligibility', JSON.stringify(values.eligibility ? [values.eligibility] : []))
     fd.append('featured', values.featured ? '1' : '0')
@@ -743,7 +797,7 @@ function Courses() {
     }
   }
 
-  const fieldErr = (key: 'name' | 'code' | 'categoryId' | 'duration' | 'courseFee' | 'registrationFee' | 'eligibility') =>
+  const fieldErr = (key: 'name' | 'code' | 'categoryId' | 'duration' | 'courseFee' | 'registrationFee' | 'level' | 'eligibility') =>
     errors[key]?.message as string | undefined
 
   const renderTabs = () => (
@@ -752,7 +806,6 @@ function Courses() {
         {([
           { id: 'basic', label: 'Basic Info', icon: BookOpen },
           { id: 'curriculum', label: 'Curriculum', icon: Layers },
-          { id: 'gallery', label: 'Gallery', icon: Images },
         ] as { id: FormTab; label: string; icon: any }[]).map((t) => {
           const active = tab === t.id
           return (
@@ -793,12 +846,33 @@ function Courses() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className={labelCls}>Course Name <span className="text-red-500">*</span></label>
-            <input type="text" className={inputCls} placeholder="Enter course name" {...register('name')} />
+            <input type="text" className={inputCls} placeholder="Enter course name" {...register('name', {
+              onChange: (e) => {
+                if (!editingCourse && !codeEdited.current) {
+                  setValue('code', uniqueCourseCode(e.target.value, existingCodes), { shouldValidate: true })
+                }
+              },
+            })} />
             {fieldErr('name') && <p className="text-red-500 text-xs mt-1">{fieldErr('name')}</p>}
           </div>
           <div>
             <label className={labelCls}>Course Code <span className="text-red-500">*</span></label>
-            <input type="text" className={inputCls} placeholder="e.g., ADCA" {...register('code')} />
+            <div className="relative">
+              <input type="text" className={`${inputCls} pr-10`} placeholder="e.g., ADCA" {...register('code', {
+                onChange: () => { codeEdited.current = true },
+              })} />
+              <button
+                type="button"
+                title="Regenerate code from course name"
+                onClick={() => setValue('code', uniqueCourseCode(getValues('name'), existingCodes), { shouldValidate: true })}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-navy transition-colors"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-gold" /> Auto-generated from course name
+            </p>
             {fieldErr('code') && <p className="text-red-500 text-xs mt-1">{fieldErr('code')}</p>}
           </div>
           <div>
@@ -818,6 +892,15 @@ function Courses() {
               )}
             />
             {fieldErr('categoryId') && <p className="text-red-500 text-xs mt-1">{fieldErr('categoryId')}</p>}
+          </div>
+          <div>
+            <label className={labelCls}>Level <span className="text-red-500">*</span></label>
+            <select className={inputCls} {...register('level')}>
+              <option value="Beginner">Beginner</option>
+              <option value="Intermediate">Intermediate</option>
+              <option value="Advanced">Advanced</option>
+            </select>
+            {fieldErr('level') && <p className="text-red-500 text-xs mt-1">{fieldErr('level')}</p>}
           </div>
         </div>
       </div>

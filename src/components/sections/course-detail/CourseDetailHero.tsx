@@ -19,7 +19,10 @@ export default function CourseDetailHero({ course }: CourseDetailHeroProps) {
               {course.title}
             </h1>
             <p className="text-text-gray text-lg mb-3">{course.subtitle}</p>
-            <p className="text-text-gray leading-relaxed mb-8 max-w-3xl mx-auto">{course.description}</p>
+            <p className="text-text-gray leading-relaxed mb-4 max-w-3xl mx-auto">{course.description}</p>
+            {course.longDescription && (
+              <p className="text-text-gray leading-relaxed mb-8 max-w-3xl mx-auto">{course.longDescription}</p>
+            )}
 
             {/* Quick Info Row */}
             <div className="flex flex-wrap items-center justify-center gap-5 mb-8">

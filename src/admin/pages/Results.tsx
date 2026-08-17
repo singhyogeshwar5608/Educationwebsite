@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Search, Plus, Eye, Download, Trash2, X, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
+  Search, Plus, Eye, Download, Trash2, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
   User, BookOpen, Calculator, AlertCircle, GraduationCap, FileText, Loader2,
 } from 'lucide-react'
 import {
@@ -15,6 +15,7 @@ import ConfirmDialog from '@/admin/components/ConfirmDialog'
 import Panel from '@/admin/components/ui/Panel'
 import Card from '@/admin/components/ui/Card'
 import ExcelSpreadsheet from '@/admin/components/ExcelSpreadsheet'
+import ResultPreview from '@/admin/components/ResultPreview'
 
 const ITEMS_PER_PAGE = 8
 
@@ -127,9 +128,11 @@ function Results() {
     if (!courseSubjects.length) return null
     const entries = courseSubjects.map((sub) => ({ name: sub.name, marks: subjectMarks[sub.id] ?? 0, maxMarks: sub.maxMarks, passingMarks: sub.passingMarks }))
     const total = entries.reduce((s, e) => s + e.marks, 0); const max = entries.reduce((s, e) => s + e.maxMarks, 0)
-    const pct = max > 0 ? (total / max) * 100 : 0; const { grade, pass } = calculateGrade(pct)
+    const pct = max > 0 ? (total / max) * 100 : 0; const { grade } = calculateGrade(pct)
     const subRes = entries.map((e) => ({ ...e, passed: e.marks >= e.passingMarks }))
-    return { total, maxTotal: max, percentage: pct, grade, pass: pass && subRes.every((s) => s.passed), subjectResults: subRes, marksEntries: entries }
+    const failedCount = subRes.filter((s) => !s.passed).length
+    const pass = failedCount < 3
+    return { total, maxTotal: max, percentage: pct, grade, pass, failedCount, subjectResults: subRes, marksEntries: entries }
   }, [courseSubjects, subjectMarks])
 
   function handleMarksChange(id: string, value: string, maxM: number) {
@@ -351,7 +354,7 @@ function Results() {
                 )}
                 {calculations && Object.keys(subjectMarks).length > 0 && (
                   <Card padding="sm" className="border border-gray-300 bg-gray-50"><p className="text-[10px] font-bold text-[#222222] mb-1 flex items-center gap-1"><Calculator className="w-3 h-3" /> LIVE CALCULATION</p>
-                    <div className="grid grid-cols-5 gap-2 text-[11px]"><div><span className="text-gray-500">Total:</span> <strong>{calculations.total}/{calculations.maxTotal}</strong></div><div><span className="text-gray-500">%:</span> <strong>{calculations.percentage.toFixed(1)}%</strong></div><div><span className="text-gray-500">Grade:</span> <strong>{calculations.grade}</strong></div><div><span className="text-gray-500">Status:</span> {calculations.pass ? <span className="badge-success">Pass</span> : <span className="badge-danger">Fail</span>}</div><div><span className="text-gray-500">Subjects:</span> <strong>{calculations.subjectResults.filter(s => s.passed).length}/{courseSubjects.length}</strong></div></div>
+                    <div className="grid grid-cols-5 gap-2 text-[11px]"><div><span className="text-gray-500">Total:</span> <strong>{calculations.total}/{calculations.maxTotal}</strong></div><div><span className="text-gray-500">%:</span> <strong>{calculations.percentage.toFixed(1)}%</strong></div><div><span className="text-gray-500">Grade:</span> <strong>{calculations.grade}</strong></div><div><span className="text-gray-500">Status:</span> {calculations.pass ? <span className="badge-success">Pass</span> : <span className="badge-danger">Fail</span>}</div><div><span className="text-gray-500">Subjects:</span> <strong>{calculations.subjectResults.filter(s => s.passed).length}/{courseSubjects.length}</strong> <span className={`ml-1 ${calculations.failedCount > 0 ? 'text-[#C62828]' : 'text-gray-400'}`}>({calculations.failedCount} fail)</span></div></div>
                   </Card>
                 )}
                 <div className="flex justify-between">
@@ -412,56 +415,9 @@ function Results() {
         </div>
       )}
 
-      {/* View Result Modal */}
+      {/* View Result Preview */}
       {viewResult && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/50 overflow-y-auto" onClick={() => setViewResult(null)}>
-          <div className="bg-white border border-gray-300 w-full max-w-3xl my-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-3 py-2 bg-[#F0F0F0] border-b border-gray-300">
-              <h2 className="text-xs font-bold text-[#222222]">Result Details</h2>
-              <button className="p-0.5 text-gray-500 hover:text-red-600" onClick={() => setViewResult(null)}><X className="w-4 h-4" /></button>
-            </div>
-            <div className="p-4 flex flex-col gap-4">
-              <div className="grid grid-cols-3 gap-3 text-[11px]">
-                <div><span className="text-gray-500">Student:</span> <span className="font-semibold text-[#222222]">{viewResult.studentName}</span></div>
-                <div><span className="text-gray-500">Course:</span> <span className="font-semibold text-[#222222]">{viewResult.course}</span></div>
-                <div><span className="text-gray-500">Date:</span> <span className="font-semibold text-[#222222]">{viewResult.publishedDate}</span></div>
-              </div>
-              <Card padding="sm" className={`border ${viewResult.pass ? 'border-[#A5D6A7] bg-[#E8F5E9]' : 'border-[#EF9A9A] bg-[#FFEBEE]'}`}>
-                <div className="grid grid-cols-5 gap-3 text-center text-[11px]">
-                  <div><p className="text-sm font-bold text-[#222222]">{viewResult.total}/{viewResult.maxTotal}</p><p className="text-[10px] text-gray-500">Total</p></div>
-                  <div><p className="text-sm font-bold text-[#222222]">{viewResult.percentage.toFixed(1)}%</p><p className="text-[10px] text-gray-500">%</p></div>
-                  <div><p className="text-sm font-bold">{viewResult.grade}</p><p className="text-[10px] text-gray-500">Grade</p></div>
-                  <div>{viewResult.pass ? <span className="badge-success text-xs">PASS</span> : <span className="badge-danger text-xs">FAIL</span>}</div>
-                  <div><p className="text-sm font-bold text-[#222222]">{viewResult.subjects.filter(s => s.marks >= s.passingMarks).length}/{viewResult.subjects.length}</p><p className="text-[10px] text-gray-500">Passed</p></div>
-                </div>
-              </Card>
-              <div className="overflow-x-auto border border-gray-300">
-                <table className="w-full border-collapse">
-                  <thead><tr className="bg-[#0078D7] text-white text-[11px]"><th className="px-3 py-1.5 text-left font-bold border-r border-[#005A9E]">#</th><th className="px-3 py-1.5 text-left font-bold border-r border-[#005A9E]">Subject</th><th className="px-3 py-1.5 text-center font-bold border-r border-[#005A9E]">Max</th><th className="px-3 py-1.5 text-center font-bold border-r border-[#005A9E]">Pass</th><th className="px-3 py-1.5 text-center font-bold border-r border-[#005A9E]">Obtained</th><th className="px-3 py-1.5 text-center font-bold">Result</th></tr></thead>
-                  <tbody>
-                    {viewResult.subjects.map((sub, idx) => {
-                      const p = sub.marks >= sub.passingMarks
-                      return (
-                        <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#F5F5F5]'}>
-                          <td className="px-3 py-1.5 text-[11px] text-gray-500 border-b border-gray-300 border-r border-gray-300">{idx + 1}</td>
-                          <td className="px-3 py-1.5 text-[11px] font-semibold text-[#222222] border-b border-gray-300 border-r border-gray-300">{sub.name}</td>
-                          <td className="px-3 py-1.5 text-[11px] text-center text-gray-600 border-b border-gray-300 border-r border-gray-300">{sub.maxMarks}</td>
-                          <td className="px-3 py-1.5 text-[11px] text-center text-gray-600 border-b border-gray-300 border-r border-gray-300">{sub.passingMarks}</td>
-                          <td className={`px-3 py-1.5 text-[11px] text-center font-bold border-b border-gray-300 border-r border-gray-300 ${p ? 'text-[#2E7D32]' : 'text-[#C62828]'}`}>{sub.marks}</td>
-                          <td className="px-3 py-1.5 text-center border-b border-gray-300">{p ? <span className="badge-success">Pass</span> : <span className="badge-danger">Fail</span>}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-2 px-3 py-2 bg-[#F0F0F0] border-t border-gray-300">
-              <button className="px-3 py-1.5 text-[11px] bg-[#E1E1E1] border border-[#B0B0B0] border-t-[#F5F5F5] border-l-[#F5F5F5] hover:bg-[#E8E8E8] text-[#222222] flex items-center gap-1"><Download className="w-3 h-3" /> Download</button>
-              <button className="px-3 py-1.5 text-[11px] bg-[#E1E1E1] border border-[#B0B0B0] border-t-[#F5F5F5] border-l-[#F5F5F5] hover:bg-[#E8E8E8] text-[#222222]" onClick={() => setViewResult(null)}>Close</button>
-            </div>
-          </div>
-        </div>
+        <ResultPreview result={viewResult} onClose={() => setViewResult(null)} />
       )}
 
       {/* Delete Confirmation */}

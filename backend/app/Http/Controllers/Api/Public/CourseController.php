@@ -56,7 +56,6 @@ class CourseController extends Controller
     public function categories(): JsonResponse
     {
         $categories = CourseCategory::query()
-            ->whereHas('courses', fn ($q) => $q->where('active', true))
             ->orderBy('sort_order')
             ->get()
             ->map(fn ($category) => [

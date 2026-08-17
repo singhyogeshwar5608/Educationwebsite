@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { navItems, getPageTitle } from '@/admin/config/navigation'
 import { authService } from '@/services/auth.service'
+import logoImg from '@/assets/Logo/Logo.png'
 
 export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -58,12 +59,12 @@ export default function AdminLayout() {
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-[220px] flex flex-col transition-transform duration-300 ease-in-out ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       }`} style={{ background: '#1E1E1E' }}>
-        <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[#333333]">
-          <div className="w-7 h-7 flex items-center justify-center bg-[#0078D7] shrink-0">
-            <span className="text-white text-xs font-bold">ZT</span>
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-[#333333]">
+          <div className="w-8 h-8 flex items-center justify-center bg-white rounded-md shrink-0 overflow-hidden">
+            <img src={logoImg} alt="Z-TECH Career Institute Logo" className="w-full h-full object-contain" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-white font-bold text-sm leading-tight truncate">Z-Tech Academy</h2>
+            <h2 className="text-white font-bold text-sm leading-tight truncate">Z-Tech</h2>
           </div>
           <button className="lg:hidden ml-auto text-gray-400 hover:text-white p-0.5" onClick={() => setSidebarOpen(false)} aria-label="Close sidebar">
             <X className="w-4 h-4" />

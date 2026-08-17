@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   ShieldCheck,
   CheckCircle2,
@@ -25,6 +27,12 @@ import {
 } from "lucide-react";
 import type { CertificateData } from "@/data/certificates";
 
+// Certificate background (certificate.jpeg) is landscape 1536x1024. The
+// capture element is rendered at this fixed size so the overlay text sits 1:1
+// on the design — RSS-style, no aspect-ratio stretching.
+const CERT_W = 1536
+const CERT_H = 1024
+
 interface VerificationCardProps {
   certificate: CertificateData;
 }
@@ -37,47 +45,24 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
   const handleDownload = async () => {
     setIsGenerating(true);
     try {
-      // Call the API route to generate the certificate PDF using the original template
-      const response = await fetch("/api/generate-certificate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          certNo: certificate.instituteCode,
-          session: certificate.session,
-          enrollmentNo: certificate.enrollmentNo,
-          rollNo: certificate.rollNumber,
-          regCode: certificate.serialNo,
-          studentName: certificate.studentName,
-          dob: certificate.dob,
-          fatherName: certificate.fatherName,
-          motherName: certificate.motherName,
-          courseName: certificate.courseName,
-          duration: certificate.courseDuration,
-          startDate: certificate.courseDurationFrom,
-          endDate: certificate.courseDurationTo,
-          issueDate: certificate.courseDurationTo,
-          instituteName: certificate.instituteName,
-          percentage: certificate.percentage,
-          grade: certificate.grade,
-          photoUrl: certificate.photo,
-          qrCodeUrl: certificate.qrCodeData,
-        }),
+      if (!certRef.current) throw new Error("Certificate element not found");
+      // RSS-style client-side generation: capture the fixed-size element and
+      // place it 1:1 on a jsPDF page of the exact same size (no stretching).
+      const canvas = await html2canvas(certRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate certificate");
-      }
-
-      // Download the PDF
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${certificate.certificateNo.replace(/\//g, "-")}-certificate.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "px",
+        format: [CERT_W, CERT_H],
+        hotfixes: ["px_scaling"],
+      });
+      pdf.addImage(imgData, "JPEG", 0, 0, CERT_W, CERT_H);
+      pdf.save(`${certificate.certificateNo.replace(/\//g, "-")}-certificate.pdf`);
     } catch (error) {
       console.error("Certificate download error:", error);
       // Fallback: open print dialog
@@ -250,19 +235,18 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
                 <div
                   ref={certRef}
                   className="relative rounded-lg sm:rounded-xl overflow-hidden border-2 border-navy/10 shadow-lg mx-auto cursor-zoom-in hover:border-navy/20 transition-colors"
-                  style={{ maxWidth: "774px", aspectRatio: "595.28 / 841.89", width: "100%" }}
+                  style={{ maxWidth: "900px", aspectRatio: `${CERT_W} / ${CERT_H}`, width: "100%" }}
                   onClick={() => setIsZoomed(true)}
                 >
-                  {/* Background image — extracted from original certificate PDF */}
+                  {/* Background image — landscape certificate template (1536x1024) */}
                   <img
-                    src="/cert-assets/certificate-bg.jpg"
+                    src="/cert-assets/certificate.jpeg"
                     alt="Certificate Template"
+                    crossOrigin="anonymous"
                     className="w-full h-full object-fill absolute inset-0"
                   />
 
-                  {/* Dynamic text overlay — positions proportional to A4 (595.28 x 841.89 pts)
-                      Calculated from PDF text extraction (PyMuPDF exact coordinates)
-                      Using larger font sizes & wider containers to prevent overlap */}
+                  {/* Dynamic text overlay — positions proportional to landscape canvas (1536x1024) */}
                   <div className="absolute inset-0" style={{ fontSize: "clamp(6px, 1.3vw, 12px)", fontFamily: "'DejaVu Serif', Georgia, serif" }}>
                     {/* Row 1: Centre Code | Session | Enrollment No | Roll No | Serial No — y=243.7pt (28.9%) */}
                     <span className="absolute font-bold text-black whitespace-nowrap" style={{ left: "9.5%", top: "28.6%", width: "10%" }}>{certificate.instituteCode}</span>
@@ -375,10 +359,10 @@ export default function VerificationCard({ certificate }: VerificationCardProps)
                   >
                     <div
                       className="relative mx-auto"
-                      style={{ maxWidth: "774px", aspectRatio: "595.28 / 841.89", width: "100%" }}
+                      style={{ maxWidth: "900px", aspectRatio: `${CERT_W} / ${CERT_H}`, width: "100%" }}
                     >
                       <img
-                        src="/cert-assets/certificate-bg.jpg"
+                        src="/cert-assets/certificate.jpeg"
                         alt="Certificate Template"
                         className="w-full h-full object-fill absolute inset-0 rounded-lg"
                       />

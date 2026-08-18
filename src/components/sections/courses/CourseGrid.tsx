@@ -20,8 +20,6 @@ export default function CourseGrid() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const ITEMS_PER_PAGE = 10;
-  const isAllFilter = activeCategory === "All Courses";
-
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(t);
@@ -73,17 +71,19 @@ export default function CourseGrid() {
     setSearchParams({}, { replace: true });
   };
 
-  // Pagination only applies on the "All Courses" filter; category-level
-  // filtering shows every matching course without pagination.
-  const totalPages = isAllFilter ? Math.max(1, Math.ceil(courses.length / ITEMS_PER_PAGE)) : 1;
-  const paginatedCourses = isAllFilter
-    ? courses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
-    : courses;
-  const startCount = isAllFilter ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 1;
-  const endCount = isAllFilter ? Math.min(currentPage * ITEMS_PER_PAGE, courses.length) : courses.length;
+  const totalPages = Math.max(1, Math.ceil(courses.length / ITEMS_PER_PAGE));
+  const paginatedCourses = courses.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const startCount = (currentPage - 1) * ITEMS_PER_PAGE + 1;
+  const endCount = Math.min(currentPage * ITEMS_PER_PAGE, courses.length);
+
+  const getVisiblePages = () => {
+    if (totalPages <= 3) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const start = Math.max(1, Math.min(currentPage - 1, totalPages - 2));
+    return [start, start + 1, start + 2];
+  };
 
   const renderPagination = () => {
-    if (!isAllFilter || totalPages <= 1) return null;
+    if (totalPages <= 1) return null;
     return (
       <div className="flex items-center justify-center gap-4 mt-10">
         <button
@@ -94,7 +94,7 @@ export default function CourseGrid() {
           Previous
         </button>
         <div className="flex items-center gap-2">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pg) => (
+          {getVisiblePages().map((pg) => (
             <button
               key={pg}
               onClick={() => setCurrentPage(pg)}
@@ -172,7 +172,7 @@ export default function CourseGrid() {
               </div>
 
               {/* Showing X–Y of Z */}
-              {isAllFilter && courses.length > ITEMS_PER_PAGE && (
+              {courses.length > ITEMS_PER_PAGE && (
                 <p className="text-center text-sm text-text-gray mt-6">
                   Showing {startCount}–{endCount} of {courses.length} courses
                 </p>

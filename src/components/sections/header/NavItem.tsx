@@ -80,21 +80,23 @@ export default function NavItem({ label, href, dropdown }: NavItemProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 14, scale: 0.95 }}
             transition={{ duration: 0.22, ease: [0.25, 0.1, 0.25, 1] }}
-            className="absolute top-full left-1/2 -translate-x-1/2 bg-navy border border-white/[0.08] backdrop-blur-2xl shadow-2xl shadow-black/30 rounded-2xl min-w-[280px] py-3 z-50 mt-3"
+            className="absolute top-full left-1/2 -translate-x-1/2 bg-navy border border-white/[0.08] backdrop-blur-2xl shadow-2xl shadow-black/30 rounded-2xl w-[840px] max-w-[calc(100vw-2rem)] py-3 px-3 z-50 mt-3"
           >
             <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-navy rotate-45 border-l border-t border-white/[0.08]" />
-            {dropdown.map((item, i) => (
-              <motion.a
-                key={item.href}
-                href={item.href}
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className="block px-5 py-2.5 text-sm text-white/70 hover:text-gold hover:bg-white/[0.04] transition-all mx-2 rounded-lg"
-              >
-                {item.label}
-              </motion.a>
-            ))}
+            <div className="grid grid-cols-4 gap-x-4 gap-y-1">
+              {dropdown.map((item, i) => (
+                <motion.a
+                  key={item.href}
+                  href={item.href}
+                  initial={{ opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.04 }}
+                  className="block min-w-0 px-4 py-2.5 text-sm text-white/70 hover:text-gold hover:bg-white/[0.04] transition-all rounded-lg leading-snug"
+                >
+                  {item.label}
+                </motion.a>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

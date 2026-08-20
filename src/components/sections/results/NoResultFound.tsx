@@ -1,11 +1,11 @@
 import { SearchX, ArrowLeft, AlertTriangle } from "lucide-react";
 
 interface NoResultFoundProps {
-  rollNumber: string;
+  registrationNumber: string;
   onTryAgain: () => void;
 }
 
-export default function NoResultFound({ rollNumber, onTryAgain }: NoResultFoundProps) {
+export default function NoResultFound({ registrationNumber, onTryAgain }: NoResultFoundProps) {
   return (
     <section className="py-6 sm:py-10 lg:py-14 bg-light-gray">
       <div className="max-w-lg mx-auto px-3 sm:px-6 lg:px-8">
@@ -15,10 +15,10 @@ export default function NoResultFound({ rollNumber, onTryAgain }: NoResultFoundP
           </div>
           <h3 className="text-xl sm:text-2xl font-bold text-navy mb-2">No Result Found</h3>
           <p className="text-text-gray text-sm sm:text-base mb-2">
-            We could not find any result for roll number:
+            We could not find any result for registration number:
           </p>
           <p className="text-navy font-bold text-base sm:text-lg mb-5 sm:mb-6 bg-light-blue inline-block px-4 py-1.5 rounded-lg border border-navy/5">
-            {rollNumber}
+            {registrationNumber}
           </p>
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 sm:mb-6 text-left">
@@ -28,7 +28,7 @@ export default function NoResultFound({ rollNumber, onTryAgain }: NoResultFoundP
             </div>
             <ul className="space-y-2 ml-6">
               {[
-                "Ensure the roll number is entered correctly",
+                "Ensure the registration number is entered correctly",
                 "Results may not be declared yet for this batch",
                 "Contact the institute for manual verification",
               ].map((reason, i) => (

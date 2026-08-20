@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  Search, Award, Eye, Download, ExternalLink, X, ChevronRight, ChevronLeft, CheckCircle2,
-  User, FileCheck, Shield, Calendar, Hash, BookOpen, QrCode, Link2, Printer, GraduationCap,
+  Search, Award, Eye, Download, ChevronRight, ChevronLeft, CheckCircle2,
+  User, FileCheck, Shield, QrCode, Link2, GraduationCap,
   Trash2, Loader2, AlertCircle,
 } from 'lucide-react'
 import { getCourseDetails } from '@/admin/services/api'
@@ -14,8 +14,29 @@ import Panel from '@/admin/components/ui/Panel'
 import Card from '@/admin/components/ui/Card'
 import ExcelSpreadsheet from '@/admin/components/ExcelSpreadsheet'
 import type { ExcelColumn } from '@/admin/components/ExcelSpreadsheet'
+import CertificatePreview, {
+  downloadCertificatePdf,
+  type CertificateData,
+} from '@/admin/components/CertificatePreview'
 
 const ITEMS_PER_PAGE = 8
+
+function toCertificateData(c: Certificate): CertificateData {
+  return {
+    id: c.id,
+    certificateNo: c.certificateNo,
+    rollNo: c.rollNo,
+    studentId: c.studentId,
+    studentName: c.studentName,
+    course: c.course,
+    percentage: c.percentage,
+    grade: c.grade,
+    issueDate: c.issueDate,
+    duration: c.duration,
+    session: c.session,
+    enrollmentNo: c.enrollmentNo,
+  }
+}
 
 interface EligibleStudent {
   id: string; name: string; course: string | null; courseId: string | null;
@@ -59,7 +80,8 @@ function Certificates() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'Issued' | 'Pending'>('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const [viewCert, setViewCert] = useState<Certificate | null>(null)
+  const [previewCert, setPreviewCert] = useState<Certificate | null>(null)
+  const [downloadingCert, setDownloadingCert] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [issueStep, setIssueStep] = useState(1)
@@ -160,6 +182,18 @@ function Certificates() {
     }
   }
 
+  async function handleDownloadCert(c: Certificate) {
+    setDownloadingCert(c.id)
+    try {
+      await downloadCertificatePdf(toCertificateData(c))
+    } catch (err) {
+      console.error('Failed to download certificate:', err)
+      toast('Failed to download certificate', 'error')
+    } finally {
+      setDownloadingCert(null)
+    }
+  }
+
   function handleSelectStudent(s: EligibleStudent) { setSelectedStudent(s) }
   function handleIssueClick() { setSelectedStudent(null); setStudentSearch(''); setAutoCertData(null); setIssueStep(1); setActiveTab('issue') }
 
@@ -172,9 +206,8 @@ function Certificates() {
     { key: 'grade', header: 'Grade', render: (c) => <span className={getGradeBadgeClass(c.grade)}>{c.grade}</span> },
     { key: 'actions', header: 'Actions', align: 'right', render: (c) => (
       <div className="flex items-center justify-end gap-1">
-        <button onClick={() => setViewCert(c)} className="p-0.5 text-gray-400 hover:text-[#0078D7]"><Eye className="w-3 h-3" /></button>
-        <button className="p-0.5 text-gray-400 hover:text-[#2E7D32]"><Download className="w-3 h-3" /></button>
-        <a href={c.verificationUrl} target="_blank" rel="noopener noreferrer" className="p-0.5 text-gray-400 hover:text-amber-600"><ExternalLink className="w-3 h-3" /></a>
+        <button onClick={() => setPreviewCert(c)} className="p-0.5 text-gray-400 hover:text-[#0078D7]" title="Preview"><Eye className="w-3 h-3" /></button>
+        <button onClick={() => handleDownloadCert(c)} disabled={downloadingCert === c.id} className="p-0.5 text-gray-400 hover:text-[#2E7D32]" title="Download">{downloadingCert === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}</button>
         <button onClick={() => setDeleteConfirm(c.id)} className="p-0.5 text-gray-400 hover:text-red-600"><Trash2 className="w-3 h-3" /></button>
       </div>
     )},
@@ -343,49 +376,12 @@ function Certificates() {
         </div>
       )}
 
-      {/* View Modal */}
-      {viewCert && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/50 overflow-y-auto" onClick={() => setViewCert(null)}>
-          <div className="bg-white border border-gray-300 w-full max-w-3xl my-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-3 py-2 bg-[#F0F0F0] border-b border-gray-300">
-              <h2 className="text-xs font-bold text-[#222222]">Certificate Details</h2>
-              <button className="p-0.5 text-gray-500 hover:text-red-600" onClick={() => setViewCert(null)}><X className="w-4 h-4" /></button>
-            </div>
-            <div className="p-4 flex flex-col gap-3">
-              <div className="border border-gray-300 bg-white">
-                <div className="bg-[#F0F0F0] border-b border-gray-300 px-3 py-2 text-center"><GraduationCap className="w-4 h-4 text-[#0078D7] inline mr-1" /><span className="text-xs font-bold text-[#222222]">ZTech Institute of Technology</span><p className="text-[10px] text-[#0078D7] font-semibold">CERTIFICATE OF COMPLETION</p></div>
-                <div className="p-3 flex flex-col gap-3">
-                  <div className="flex items-center justify-between bg-gray-50 border border-gray-200 px-2.5 py-1.5"><span className="text-[10px] text-gray-500">Certificate No</span><span className="text-[11px] font-mono font-bold text-[#222222]">{viewCert.certificateNo}</span></div>
-                  <div className="grid grid-cols-1 md:grid-cols-[100px_1fr] gap-3">
-                    <div className="flex justify-center"><div className="w-24 h-28 border border-gray-200 bg-gray-50 flex flex-col items-center justify-center"><User className="w-6 h-6 text-gray-300" /><span className="text-[8px] text-gray-400 mt-1">Photo</span></div></div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[11px]">
-                      <div><span className="text-gray-500">Name:</span> <span className="font-semibold text-[#222222]">{viewCert.studentName}</span></div>
-                      <div><span className="text-gray-500">Course:</span> <span className="font-semibold text-[#222222]">{viewCert.course}</span></div>
-                      <div><span className="text-gray-500">Enrollment:</span> <span className="font-semibold text-[#222222]">{viewCert.enrollmentNo}</span></div>
-                      <div><span className="text-gray-500">Roll:</span> <span className="font-semibold text-[#222222]">{viewCert.rollNo}</span></div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-4 gap-2 text-[11px]">
-                    <div className="border border-gray-200 px-2 py-1.5"><span className="text-gray-500 text-[10px]">Duration</span><p className="font-semibold text-[#222222]">{viewCert.duration}</p></div>
-                    <div className="border border-gray-200 px-2 py-1.5"><span className="text-gray-500 text-[10px]">Session</span><p className="font-semibold text-[#222222]">{viewCert.session}</p></div>
-                    <div className="border border-gray-200 px-2 py-1.5"><span className="text-gray-500 text-[10px]">Issued</span><p className="font-semibold text-[#222222]">{viewCert.issueDate}</p></div>
-                    <div className="border border-gray-200 px-2 py-1.5 bg-[#E8F5E9]"><span className="text-gray-500 text-[10px]">%</span><p className="font-bold text-[#222222]">{viewCert.percentage != null ? viewCert.percentage.toFixed(1) : '—'}%</p></div>
-                    <div className="border border-gray-200 px-2 py-1.5 bg-[#E8F5E9]"><span className="text-gray-500 text-[10px]">Grade</span><p className="font-bold">{viewCert.grade}</p></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center gap-3 border border-gray-200 px-3 py-2"><QrCode className="w-6 h-6 text-gray-400 shrink-0" /><div><p className="text-[10px] font-semibold text-[#222222]">QR Code</p><p className="text-[8px] text-gray-500">{viewCert.qrCode}</p></div></div>
-                    <div className="flex items-center gap-2 border border-gray-200 px-3 py-2"><ExternalLink className="w-4 h-4 text-gray-400 shrink-0" /><div className="min-w-0"><p className="text-[10px] font-semibold text-[#222222]">Verify</p><a href={viewCert.verificationUrl} target="_blank" rel="noopener noreferrer" className="text-[8px] text-blue-600 truncate block">{viewCert.verificationUrl}</a></div></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-2 px-3 py-2 bg-[#F0F0F0] border-t border-gray-300">
-              <button className="px-3 py-1.5 text-[11px] bg-[#E1E1E1] border border-[#B0B0B0] border-t-[#F5F5F5] border-l-[#F5F5F5] hover:bg-[#E8E8E8] text-[#222222]" onClick={() => setViewCert(null)}>Close</button>
-              <button className="px-3 py-1.5 text-[11px] bg-[#E1E1E1] border border-[#B0B0B0] border-t-[#F5F5F5] border-l-[#F5F5F5] hover:bg-[#E8E8E8] text-[#222222] flex items-center gap-1"><Download className="w-3 h-3" /> Download</button>
-              <a href={viewCert.verificationUrl} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 text-[11px] bg-[#E1E1E1] border border-[#B0B0B0] border-t-[#F5F5F5] border-l-[#F5F5F5] hover:bg-[#E8E8E8] text-[#222222] flex items-center gap-1"><ExternalLink className="w-3 h-3" /> Verify</a>
-            </div>
-          </div>
-        </div>
+      {/* Certificate Image Preview */}
+      {previewCert && (
+        <CertificatePreview
+          data={toCertificateData(previewCert)}
+          onClose={() => setPreviewCert(null)}
+        />
       )}
 
       {/* Delete Confirmation */}

@@ -10,6 +10,7 @@ export interface SubjectMark {
 
 export interface StudentResult {
   rollNumber: string;
+  registrationNumber?: string;
   studentName: string;
   fatherName: string;
   courseName: string;

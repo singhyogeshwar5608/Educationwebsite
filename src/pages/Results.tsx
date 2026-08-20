@@ -46,19 +46,19 @@ export default function Results() {
 
   const [resultState, setResultState] = useState<SearchState>("idle");
   const [result, setResult] = useState<StudentResult | null>(null);
-  const [searchedRoll, setSearchedRoll] = useState("");
+  const [searchedRegNo, setSearchedRegNo] = useState("");
   const [isResultLoading, setIsResultLoading] = useState(false);
 
   const [certState, setCertState] = useState<SearchState>("idle");
   const [certificate, setCertificate] = useState<CertificateData | null>(null);
-  const [searchedCertNo, setSearchedCertNo] = useState("");
+  const [searchedRegNoCert, setSearchedRegNoCert] = useState("");
   const [isCertLoading, setIsCertLoading] = useState(false);
 
-  const handleResultSearch = useCallback(async (rollNumber: string) => {
+  const handleResultSearch = useCallback(async (registrationNumber: string) => {
     setIsResultLoading(true);
-    setSearchedRoll(rollNumber);
+    setSearchedRegNo(registrationNumber);
     try {
-      const found = await publicService.results.search(rollNumber) as StudentResult;
+      const found = await publicService.results.search(registrationNumber) as StudentResult;
       setResult(found);
       setResultState("found");
     } catch {
@@ -72,15 +72,15 @@ export default function Results() {
   const handleResultReset = useCallback(() => {
     setResultState("idle");
     setResult(null);
-    setSearchedRoll("");
+    setSearchedRegNo("");
     setIsResultLoading(false);
   }, []);
 
-  const handleCertSearch = useCallback(async (certNo: string) => {
+  const handleCertSearch = useCallback(async (registrationNumber: string) => {
     setIsCertLoading(true);
-    setSearchedCertNo(certNo);
+    setSearchedRegNoCert(registrationNumber);
     try {
-      const found = await publicService.certificates.verify(certNo) as CertificateData;
+      const found = await publicService.certificates.verify(registrationNumber) as CertificateData;
       setCertificate(found);
       setCertState("found");
     } catch {
@@ -94,7 +94,7 @@ export default function Results() {
   const handleCertReset = useCallback(() => {
     setCertState("idle");
     setCertificate(null);
-    setSearchedCertNo("");
+    setSearchedRegNoCert("");
     setIsCertLoading(false);
   }, []);
 
@@ -150,8 +150,8 @@ export default function Results() {
               </h3>
               <p className="text-center text-sm text-text-gray mb-5">
                 {tab === "result"
-                  ? "Enter your roll number to view your marks and grade"
-                  : "Enter certificate number to verify its authenticity"}
+                  ? "Enter your registration number to view your marks and grade"
+                  : "Enter registration number to verify your certificate"}
               </p>
 
               {tab === "result" ? (
@@ -205,14 +205,14 @@ export default function Results() {
         {/* Result Found */}
         {tab === "result" && !isResultLoading && resultState === "found" && result && (
           <AnimateOnScroll>
-            <ResultCard result={result} onSearchAgain={handleResultReset} />
+            <ResultCard result={result} />
           </AnimateOnScroll>
         )}
 
         {/* Result Not Found */}
         {tab === "result" && !isResultLoading && resultState === "not_found" && (
           <AnimateOnScroll>
-            <NoResultFound rollNumber={searchedRoll} onTryAgain={handleResultReset} />
+            <NoResultFound registrationNumber={searchedRegNo} onTryAgain={handleResultReset} />
           </AnimateOnScroll>
         )}
 
@@ -226,7 +226,7 @@ export default function Results() {
         {/* Certificate Not Found */}
         {tab === "certificate" && !isCertLoading && certState === "not_found" && (
           <AnimateOnScroll>
-            <NoCertificateFound certNo={searchedCertNo} onTryAgain={handleCertReset} />
+            <NoCertificateFound registrationNumber={searchedRegNoCert} onTryAgain={handleCertReset} />
           </AnimateOnScroll>
         )}
 

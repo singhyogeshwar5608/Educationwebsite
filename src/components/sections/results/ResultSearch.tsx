@@ -4,30 +4,28 @@ import { useState } from "react";
 import { Search, RotateCcw, Hash, Loader2 } from "lucide-react";
 
 interface ResultSearchProps {
-  onSearch: (rollNumber: string) => void;
+  onSearch: (registrationNumber: string) => void;
   onReset: () => void;
   hasResult: boolean;
   isLoading?: boolean;
 }
 
-const samples = ["ZTCA-2024-001", "ZTCA-2024-002", "ZTCA-2024-004", "ZTCA-2024-009"];
-
 export default function ResultSearch({ onSearch, onReset, hasResult, isLoading }: ResultSearchProps) {
-  const [rollNumber, setRollNumber] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!rollNumber.trim()) {
-      setError("Please enter a roll number");
+    if (!registrationNumber.trim()) {
+      setError("Please enter a registration number");
       return;
     }
-    onSearch(rollNumber.trim());
+    onSearch(registrationNumber.trim());
   };
 
   const handleReset = () => {
-    setRollNumber("");
+    setRegistrationNumber("");
     setError("");
     onReset();
   };
@@ -35,19 +33,19 @@ export default function ResultSearch({ onSearch, onReset, hasResult, isLoading }
   return (
     <form onSubmit={handleSubmit} noValidate>
       <div className="mb-4">
-        <label htmlFor="roll-number" className="block text-sm font-semibold text-navy mb-1.5">
-          Roll Number
+        <label htmlFor="registration-number" className="block text-sm font-semibold text-navy mb-1.5">
+          Registration Number
         </label>
         <div className="relative">
           <div className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-text-gray pointer-events-none">
             <Search className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <input
-            id="roll-number"
+            id="registration-number"
             type="text"
-            value={rollNumber}
-            onChange={(e) => { setRollNumber(e.target.value); setError(""); }}
-            placeholder="e.g. ZTCA-2024-001"
+            value={registrationNumber}
+            onChange={(e) => { setRegistrationNumber(e.target.value); setError(""); }}
+            placeholder="e.g. REG2025001"
             className={`w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-3 sm:py-3.5 bg-white border-2 rounded-xl text-navy font-medium text-base sm:text-lg placeholder:text-gray-400 transition-all outline-none focus:ring-2 focus:ring-offset-0 ${
               error
                 ? "border-red-300 focus:border-red-400 focus:ring-red-200"
@@ -97,20 +95,6 @@ export default function ResultSearch({ onSearch, onReset, hasResult, isLoading }
             Search Again
           </button>
         )}
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-1.5">
-        <span className="text-xs text-text-gray font-medium mr-1">Sample:</span>
-        {samples.map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => { setRollNumber(s); setError(""); }}
-            className="text-xs font-medium px-2.5 py-1 rounded-lg bg-light-blue text-navy hover:bg-navy hover:text-gold border border-navy/10 hover:border-gold/30 transition-all"
-          >
-            {s}
-          </button>
-        ))}
       </div>
     </form>
   );

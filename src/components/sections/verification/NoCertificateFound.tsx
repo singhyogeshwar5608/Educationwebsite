@@ -1,11 +1,11 @@
 import { ShieldX, ArrowLeft } from "lucide-react";
 
 interface NoCertificateFoundProps {
-  certNo: string;
+  registrationNumber: string;
   onTryAgain: () => void;
 }
 
-export default function NoCertificateFound({ certNo, onTryAgain }: NoCertificateFoundProps) {
+export default function NoCertificateFound({ registrationNumber, onTryAgain }: NoCertificateFoundProps) {
   return (
     <section className="py-5 sm:py-8 lg:py-12 bg-light-gray">
       <div className="max-w-lg mx-auto px-3 sm:px-6 lg:px-8">
@@ -17,17 +17,17 @@ export default function NoCertificateFound({ certNo, onTryAgain }: NoCertificate
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-navy mb-1.5 sm:mb-2">Certificate Not Found</h3>
             <p className="text-text-gray text-xs sm:text-sm mb-1.5 sm:mb-2">
-              We could not verify any certificate with number:
+              We could not verify any certificate with registration number:
             </p>
             <p className="text-navy font-bold text-base sm:text-lg mb-4 sm:mb-6 bg-light-blue inline-block px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg">
-              {certNo}
+              {registrationNumber}
             </p>
             <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-text-gray mb-4 sm:mb-6">
               <p>Possible reasons:</p>
               <ul className="text-left max-w-xs mx-auto space-y-1 sm:space-y-1.5">
                 <li className="flex items-start gap-1.5 sm:gap-2">
                   <span className="w-1.5 h-1.5 bg-navy rounded-full mt-1 sm:mt-1.5 shrink-0" />
-                  <span>Certificate number may be entered incorrectly</span>
+                  <span>Registration number may be entered incorrectly</span>
                 </li>
                 <li className="flex items-start gap-1.5 sm:gap-2">
                   <span className="w-1.5 h-1.5 bg-navy rounded-full mt-1 sm:mt-1.5 shrink-0" />

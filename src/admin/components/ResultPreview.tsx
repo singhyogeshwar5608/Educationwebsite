@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect, type CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { X, Download, Loader2 } from 'lucide-react'
-import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import QRCode from 'qrcode'
 import { studentsService } from '@/services/students.service'
@@ -46,6 +45,268 @@ function shortYear(fullBatchOrDate: string | undefined | null): string {
   return fullBatchOrDate
 }
 
+interface SubjectRow {
+  code: string
+  name: string
+  maxMarks: number
+  theoryMax: number
+  theoryObt: number
+  practicalMax: number
+  practicalObt: number
+  subjectTotal: number
+  passingMarks: number
+}
+
+function buildSubjectRows(result: Result): SubjectRow[] {
+  const subjects = result.subjects ?? []
+  return subjects.map((sub, i) => {
+    const code = (sub as any).code || (sub as any).subject_code || String(i + 1).padStart(2, '0')
+    const name = sub.name || (sub as any).subject || ''
+    const maxMarks = sub.maxMarks ?? (sub as any).maximum_marks ?? 100
+    const theoryMax = (sub as any).theoryMaxMarks ?? (sub as any).theory_max_marks ?? maxMarks
+    const theoryObt =
+      (sub as any).theoryMarks ?? (sub as any).theory_obtained_marks ?? sub.marks ?? 0
+    const practicalMax = (sub as any).practicalMaxMarks ?? (sub as any).practical_max_marks ?? 0
+    const practicalObt = (sub as any).practicalMarks ?? (sub as any).practical_obtained_marks ?? 0
+    const subjectTotal =
+      (sub as any).totalMarks ??
+      (sub as any).total_marks ??
+      (sub as any).total ??
+      theoryObt + practicalObt
+    const passingMarks = sub.passingMarks ?? (sub as any).passing_marks ?? 33
+    return {
+      code,
+      name,
+      maxMarks,
+      theoryMax,
+      theoryObt,
+      practicalMax,
+      practicalObt,
+      subjectTotal,
+      passingMarks,
+    }
+  })
+}
+
+// Marks table column widths (same percentages as the HTML <table>), as fractions
+// of the table width, so both the preview and the canvas export share them.
+const MARKS_COLS = [0.11003, 0.32902, 0.09709, 0.08954, 0.09924, 0.09169, 0.08954, 0.09385]
+const MARKS_TABLE_LEFT = 48
+const MARKS_TABLE_W = 927
+const MARKS_TOTAL_TOP = 1259
+const MARKS_TOTAL_ROW_H = 47
+
+// Draw the marksheet onto a canvas: background + every field/table cell at exact
+// coordinates. Used by the PDF export — html2canvas is unreliable with absolute
+// positioned text and caused fields to shift/hide on download.
+async function renderMarksheetToCanvas(
+  result: Result,
+  student: any,
+  instituteName: string,
+  qrCodeUrl: string,
+): Promise<HTMLCanvasElement> {
+  const canvas = document.createElement('canvas')
+  canvas.width = DESIGN_W
+  canvas.height = DESIGN_H
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas 2D context unavailable')
+
+  const bg = new Image()
+  bg.src = RESULT_BG_BASE64
+  await new Promise<void>((resolve, reject) => {
+    bg.onload = () => resolve()
+    bg.onerror = () => reject(new Error('Failed to load marksheet background'))
+  })
+  ctx.drawImage(bg, 0, 0, DESIGN_W, DESIGN_H)
+
+  const rows = buildSubjectRows(result)
+  const calcTotalMax = rows.reduce((sum, r) => sum + r.maxMarks, 0)
+  const calcTotalObt = rows.reduce((sum, r) => sum + r.subjectTotal, 0)
+  const calcTotalPassing = rows.reduce((sum, r) => sum + r.passingMarks, 0)
+
+  const font = "Arial, 'Helvetica Neue', Helvetica, sans-serif"
+  const text = (
+    x: number,
+    y: number,
+    w: number,
+    fontSize: number,
+    align: 'left' | 'center' | 'right',
+    bold: boolean,
+    value: string | number,
+  ) => {
+    if (value === '' || value === undefined || value === null) return
+    ctx.fillStyle = '#000'
+    ctx.font = `${bold ? 700 : 400} ${fontSize}px ${font}`
+    ctx.textAlign = align
+    ctx.textBaseline = 'top'
+    let drawX = x
+    if (align === 'center') drawX = x + w / 2
+    if (align === 'right') drawX = x + w
+    ctx.fillText(String(value), drawX, y)
+  }
+
+  const cellText = (
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    align: 'left' | 'center' | 'right',
+    value: string | number,
+    clip = false,
+  ) => {
+    if (value === '' || value === undefined || value === null) return
+    ctx.fillStyle = '#000'
+    ctx.font = `700 18px ${font}`
+    ctx.textAlign = align
+    ctx.textBaseline = 'middle'
+    let drawX = x
+    if (align === 'center') drawX = x + w / 2
+    if (align === 'right') drawX = x + w
+    const str = String(value)
+    if (!clip) {
+      ctx.fillText(str, drawX, y + h / 2)
+      return
+    }
+    // Clip long text to the cell width (matching the HTML <td> which uses
+    // whiteSpace:nowrap + overflow:hidden + textOverflow:ellipsis).
+    const textWidth = ctx.measureText(str).width
+    if (textWidth <= w) {
+      ctx.fillText(str, drawX, y + h / 2)
+      return
+    }
+    const ellipsis = '…'
+    const ellWidth = ctx.measureText(ellipsis).width
+    let truncated = str
+    while (truncated.length > 0 && ctx.measureText(truncated).width + ellWidth > w) {
+      truncated = truncated.slice(0, -1)
+    }
+    ctx.fillText(truncated + ellipsis, drawX, y + h / 2)
+  }
+
+  // Header fields
+  text(140, 49, 150, 21, 'left', true, result.rollNo || '—')
+  text(755, 49, 170, 21, 'right', true, student?.registrationNo || '—')
+  text(175, 470, 670, 27, 'center', true, result.course || '')
+  text(275, 568, 330, 20, 'left', true, result.studentName || '')
+  text(780, 568, 235, 20, 'left', true, student?.dob || '')
+  text(275, 611, 330, 20, 'left', true, student?.fatherName || '')
+  text(820, 611, 200, 20, 'left', true, student?.duration || (result as any)?.duration || '1 Year')
+  text(275, 655, 330, 20, 'left', true, student?.motherName || '')
+  text(785, 655, 235, 20, 'left', true, student?.batch || shortYear(result.publishedDate))
+  text(275, 700, 540, 20, 'left', true, instituteName)
+
+  // Student photo (if available)
+  if (student?.photo) {
+    const px = DESIGN_W * 0.78
+    const py = DESIGN_H * 0.285
+    const pw = DESIGN_W * 0.145
+    const ph = DESIGN_H * 0.115
+    ctx.fillStyle = '#fff'
+    ctx.fillRect(px, py, pw, ph)
+    ctx.strokeStyle = '#000'
+    ctx.lineWidth = 1.5
+    ctx.strokeRect(px, py, pw, ph)
+    try {
+      const photo = new Image()
+      photo.crossOrigin = 'anonymous'
+      photo.src = student.photo
+      await new Promise<void>((resolve, reject) => {
+        photo.onload = () => resolve()
+        photo.onerror = () => reject(new Error('Failed to load student photo'))
+      })
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(px, py, pw, ph)
+      ctx.clip()
+      ctx.drawImage(photo, px, py, pw, ph)
+      ctx.restore()
+    } catch {
+      /* photo optional — skip on error */
+    }
+  }
+
+  // Marks table rows
+  rows.forEach((r, i) => {
+    const rowTop = MARKS_TABLE_TOP + i * MARKS_ROW_H
+    let colX = MARKS_TABLE_LEFT
+    const cells: { align: 'left' | 'center'; value: string | number }[] = [
+      { align: 'center', value: '' },
+      { align: 'left', value: r.name },
+      { align: 'center', value: r.maxMarks },
+      { align: 'center', value: r.passingMarks },
+      { align: 'center', value: r.theoryObt },
+      { align: 'center', value: r.practicalMax },
+      { align: 'center', value: r.practicalObt },
+      { align: 'center', value: r.subjectTotal },
+    ]
+    cells.forEach((c, ci) => {
+      const colW = MARKS_COLS[ci] * MARKS_TABLE_W
+      if (ci !== 0 && c.value !== '') {
+        cellText(colX, rowTop, colW, MARKS_ROW_H, c.align, c.value, ci === 1)
+      }
+      colX += colW
+    })
+    // Subject code overlay (drawn at its own absolute column)
+    text(
+      SUBJECT_CODE_X,
+      rowTop + (MARKS_ROW_H - MARKS_FONT) / 2,
+      SUBJECT_CODE_W,
+      MARKS_FONT,
+      'center',
+      true,
+      r.code,
+    )
+  })
+
+  // TOTAL row
+  {
+    const rowTop = MARKS_TOTAL_TOP
+    let colX = MARKS_TABLE_LEFT
+    const cells: { align: 'left' | 'center'; value: string | number }[] = [
+      { align: 'center', value: '' },
+      { align: 'center', value: '' },
+      { align: 'center', value: result.maxTotal ?? calcTotalMax },
+      { align: 'center', value: calcTotalPassing },
+      { align: 'center', value: result.total ?? calcTotalObt },
+      { align: 'center', value: 0 },
+      { align: 'center', value: 0 },
+      { align: 'center', value: result.total ?? calcTotalObt },
+    ]
+    cells.forEach((c, ci) => {
+      const colW = MARKS_COLS[ci] * MARKS_TABLE_W
+      if (c.value !== '') {
+        ctx.fillStyle = '#000'
+        ctx.font = `700 19px ${font}`
+        ctx.textAlign = c.align
+        ctx.textBaseline = 'middle'
+        let drawX = colX
+        if (c.align === 'center') drawX = colX + colW / 2
+        ctx.fillText(String(c.value), drawX, rowTop + MARKS_TOTAL_ROW_H / 2)
+      }
+      colX += colW
+    })
+  }
+
+  // QR code
+  if (qrCodeUrl) {
+    try {
+      const qr = new Image()
+      qr.src = qrCodeUrl
+      await new Promise<void>((resolve, reject) => {
+        qr.onload = () => resolve()
+        qr.onerror = () => reject(new Error('Failed to load QR code'))
+      })
+      ctx.fillStyle = '#fff'
+      ctx.fillRect(480, 1399, 77, 77)
+      ctx.drawImage(qr, 480, 1399, 77, 77)
+    } catch {
+      /* QR optional */
+    }
+  }
+
+  return canvas
+}
+
 // ── The actual marksheet content ──────────────────────────────────────────
 // Fixed px coordinates mapped 1:1 to the 1024x1536 background design.
 function MarksheetContent({
@@ -60,6 +321,7 @@ function MarksheetContent({
   qrCodeUrl: string
 }) {
   const subjects = result.subjects ?? []
+  const rows = buildSubjectRows(result)
 
   const abs = (
     x: number,
@@ -103,34 +365,6 @@ function MarksheetContent({
     (sum, sub) => sum + (sub.passingMarks ?? (sub as any).passing_marks ?? 33),
     0,
   )
-
-  const rows = subjects.map((sub, i) => {
-    const code = (sub as any).code || (sub as any).subject_code || String(i + 1).padStart(2, '0')
-    const name = sub.name || (sub as any).subject || ''
-    const maxMarks = sub.maxMarks ?? (sub as any).maximum_marks ?? 100
-    const theoryMax = (sub as any).theoryMaxMarks ?? (sub as any).theory_max_marks ?? maxMarks
-    const theoryObt =
-      (sub as any).theoryMarks ?? (sub as any).theory_obtained_marks ?? sub.marks ?? 0
-    const practicalMax = (sub as any).practicalMaxMarks ?? (sub as any).practical_max_marks ?? 0
-    const practicalObt = (sub as any).practicalMarks ?? (sub as any).practical_obtained_marks ?? 0
-    const subjectTotal =
-      (sub as any).totalMarks ??
-      (sub as any).total_marks ??
-      (sub as any).total ??
-      theoryObt + practicalObt
-    const passingMarks = sub.passingMarks ?? (sub as any).passing_marks ?? 33
-    return {
-      code,
-      name,
-      maxMarks,
-      theoryMax,
-      theoryObt,
-      practicalMax,
-      practicalObt,
-      subjectTotal,
-      passingMarks,
-    }
-  })
 
   return (
     <div
@@ -347,7 +581,6 @@ function MarksheetContent({
 }
 
 export default function ResultPreview({ result, onClose }: ResultPreviewProps) {
-  const previewRef = useRef<HTMLDivElement>(null)
   const measureRef = useRef<HTMLDivElement>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [scale, setScale] = useState(0.5)
@@ -389,15 +622,14 @@ export default function ResultPreview({ result, onClose }: ResultPreviewProps) {
   }, [])
 
   const handleDownloadPDF = async () => {
-    if (!previewRef.current) return
     setIsExporting(true)
     try {
-      const canvas = await html2canvas(previewRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-      })
+      const canvas = await renderMarksheetToCanvas(
+        result,
+        student,
+        instituteName,
+        qrCodeUrl,
+      )
       const imgData = canvas.toDataURL('image/jpeg', 0.95)
       // RSS-style: jsPDF page size = element size (1024x1536), so the image is
       // placed 1:1 with zero stretching.
@@ -438,9 +670,12 @@ export default function ResultPreview({ result, onClose }: ResultPreviewProps) {
 
         <div className="p-3 sm:p-4">
           {/* Preview (scaled copy for display) */}
-          <div ref={measureRef} className="w-full overflow-hidden">
+          <div ref={measureRef} className="w-full overflow-hidden relative">
             <div
               style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
                 width: DESIGN_W,
                 height: DESIGN_H,
                 transform: `scale(${scale})`,
@@ -454,30 +689,8 @@ export default function ResultPreview({ result, onClose }: ResultPreviewProps) {
                 qrCodeUrl={qrCodeUrl}
               />
             </div>
-            {/* Spacer to reserve the scaled height */}
-            <div style={{ height: DESIGN_H * scale }} />
-          </div>
-
-          {/* Off-screen fixed-size capture element (the "print" source) */}
-          <div
-            style={{
-              position: 'fixed',
-              left: '-10000px',
-              top: 0,
-              width: DESIGN_W,
-              height: DESIGN_H,
-              zIndex: -1,
-              pointerEvents: 'none',
-            }}
-          >
-            <div ref={previewRef}>
-              <MarksheetContent
-                result={result}
-                student={student}
-                instituteName={instituteName}
-                qrCodeUrl={qrCodeUrl}
-              />
-            </div>
+            {/* Spacer reserves only the scaled height */}
+            <div style={{ height: DESIGN_H * scale, width: '100%' }} />
           </div>
 
           {studentQuery.isLoading && (

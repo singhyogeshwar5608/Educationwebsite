@@ -1,16 +1,32 @@
 import { useRef, useState, useEffect, type CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { X, Download, Loader2 } from 'lucide-react'
-import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import { studentsService } from '@/services/students.service'
 import { settingsService } from '@/services/gallery.service'
 import { coursesService } from '@/services/courses.service'
-import type { Result } from '@/admin/services/api'
 import { CERT_BG_BASE64 } from '@/admin/components/certBgBase64'
 
+// Normalized certificate data. Both a `Result` (results page) and a `Certificate`
+// (certificates page) can be mapped to this shape.
+export interface CertificateData {
+  id?: string
+  certificateNo?: string
+  rollNo?: string
+  studentId?: string
+  studentName?: string
+  course?: string
+  percentage?: number | null
+  grade?: string | null
+  issueDate?: string
+  publishedDate?: string
+  duration?: string
+  session?: string
+  enrollmentNo?: string
+}
+
 interface CertificatePreviewProps {
-  result: Result
+  data: CertificateData
   onClose: () => void
 }
 
@@ -38,13 +54,123 @@ function shortYear(fullBatchOrDate: string | undefined | null): string {
   return fullBatchOrDate
 }
 
+interface CertField {
+  x: number
+  y: number
+  w: number
+  fontSize: number
+  align: 'left' | 'center' | 'right'
+  bold: boolean
+  text: string
+}
+
+// Single source of truth for every field's position + value. Used by BOTH the
+// on-screen preview (abs spans) and the canvas-based PDF export, so the download
+// always matches the preview exactly.
+function buildCertFields(
+  data: CertificateData,
+  student: any,
+  course: any,
+  instituteName: string,
+): CertField[] {
+  return [
+    { x: 170, y: 40, w: 420, fontSize: 24, align: 'left', bold: true, text: data.certificateNo || data.rollNo || '' },
+    { x: 1140, y: 40, w: 250, fontSize: 24, align: 'right', bold: true, text: data.enrollmentNo || student?.registrationNo || '' },
+    { x: 500, y: 507, w: 560, fontSize: 32, align: 'center', bold: true, text: data.studentName || '' },
+    { x: 350, y: 552, w: 560, fontSize: 30, align: 'center', bold: true, text: student?.fatherName || '' },
+    { x: 455, y: 598, w: 250, fontSize: 28, align: 'right', bold: true, text: data.enrollmentNo || student?.registrationNo || '' },
+    { x: 450, y: 682, w: 600, fontSize: 32, align: 'center', bold: true, text: data.course || '' },
+    { x: 260, y: 739, w: 290, fontSize: 28, align: 'center', bold: true, text: data.duration || course?.duration || student?.duration || '' },
+    { x: 600, y: 739, w: 290, fontSize: 28, align: 'center', bold: true, text: data.session || student?.batch || shortYear(data.issueDate || data.publishedDate) },
+    { x: 1020, y: 739, w: 280, fontSize: 28, align: 'right', bold: true, text: data.percentage != null ? `${data.percentage}%` : '' },
+    { x: 1000, y: 739, w: 240, fontSize: 28, align: 'left', bold: true, text: data.grade || '' },
+    { x: 310, y: 891, w: 220, fontSize: 24, align: 'center', bold: true, text: data.issueDate || data.publishedDate || '' },
+    { x: 90, y: 960, w: 500, fontSize: 16, align: 'left', bold: false, text: instituteName },
+  ]
+}
+
+// Draw the certificate onto a canvas: background image + every text field at its
+// exact coordinate. This is what the PDF export uses (html2canvas is unreliable
+// with absolutely positioned text, which caused fields to shift/hide on download).
+async function renderCertificateToCanvas(
+  data: CertificateData,
+  student: any,
+  course: any,
+  instituteName: string,
+): Promise<HTMLCanvasElement> {
+  const canvas = document.createElement('canvas')
+  canvas.width = DESIGN_W
+  canvas.height = DESIGN_H
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas 2D context unavailable')
+
+  const bg = new Image()
+  bg.src = CERT_BG_BASE64
+  await new Promise<void>((resolve, reject) => {
+    bg.onload = () => resolve()
+    bg.onerror = () => reject(new Error('Failed to load certificate background'))
+  })
+  ctx.drawImage(bg, 0, 0, DESIGN_W, DESIGN_H)
+
+  ctx.fillStyle = '#000000'
+  ctx.textBaseline = 'top'
+  for (const f of buildCertFields(data, student, course, instituteName)) {
+    if (!f.text) continue
+    ctx.font = `${f.bold ? '600' : '400'} ${f.fontSize}px 'Times New Roman', Georgia, serif`
+    ctx.textAlign = f.align
+    let drawX = f.x
+    if (f.align === 'center') drawX = f.x + f.w / 2
+    if (f.align === 'right') drawX = f.x + f.w
+    ctx.fillText(f.text, drawX, f.y)
+  }
+
+  return canvas
+}
+
+// Standalone PDF download (used by row download buttons outside the modal).
+export async function downloadCertificatePdf(
+  data: CertificateData,
+  student?: any,
+  course?: any,
+  instituteName?: string,
+): Promise<void> {
+  const resolvedStudent = student ?? (data.studentId ? await studentsService.show(Number(data.studentId)) : null)
+  const resolvedCourse =
+    course ??
+    (resolvedStudent?.courseId ? await coursesService.show(Number(resolvedStudent.courseId)) : null)
+  let resolvedInstitute = instituteName ?? 'Z-TECH CAREER ACADEMY'
+  if (!resolvedInstitute) {
+    try {
+      const settings = await settingsService.get()
+      resolvedInstitute = (settings as any)?.institute?.instituteName || 'Z-TECH CAREER ACADEMY'
+    } catch {
+      resolvedInstitute = 'Z-TECH CAREER ACADEMY'
+    }
+  }
+  const canvas = await renderCertificateToCanvas(
+    data,
+    resolvedStudent,
+    resolvedCourse,
+    resolvedInstitute,
+  )
+  const imgData = canvas.toDataURL('image/jpeg', 0.95)
+  const pdf = new jsPDF({
+    orientation: 'landscape',
+    unit: 'px',
+    format: [DESIGN_W, DESIGN_H],
+    hotfixes: ['px_scaling'],
+  })
+  pdf.addImage(imgData, 'JPEG', 0, 0, DESIGN_W, DESIGN_H)
+  pdf.save(`Certificate_${data.certificateNo || data.rollNo || data.studentName || 'Student'}.pdf`)
+}
+
 function CertificateContent({
-  result,
+  data,
   student,
   course,
   instituteName,
 }: {
-  result: Result
+  data: CertificateData
   student: any
   course: any
   instituteName: string
@@ -71,6 +197,8 @@ function CertificateContent({
     color: '#000',
   })
 
+  const fields = buildCertFields(data, student, course, instituteName)
+
   return (
     <div
       style={{
@@ -85,65 +213,27 @@ function CertificateContent({
         backgroundPosition: 'center',
       }}
     >
-      {/* Certificate No */}
-      <span style={abs(170, 40, 420, 24, 'left')}>{result.rollNo || ''}</span>
-
-      {/* Enrollment / Registration No (top right) */}
-      <span style={abs(1140, 40, 250, 24, 'right')}>
-        {student?.registrationNo || ''}
-      </span>
-
-      {/* Student Name */}
-      <span style={abs(500, 507, 560, 32, 'center')}>{result.studentName || ''}</span>
-
-      {/* Father's Name */}
-      <span style={abs(350, 552, 560,30, 'center')}>{student?.fatherName || ''}</span>
-
-      {/* Enrollment / Registration No (top right) */}
-      <span style={abs(455,598, 250, 28, 'right')}>
-        {student?.registrationNo || ''}
-      </span>
-
-      {/* Course */}
-      <span style={abs(450, 682, 600, 32, 'center')}>{result.course || ''}</span>
-
-      {/* Duration */}
-      <span style={abs(260, 739, 290, 28, 'center')}>
-        {course?.duration || student?.duration || (result as any)?.duration || ''}
-      </span>
-
-      {/* Session */}
-      <span style={abs(600, 739, 290, 28, 'center')}>
-        {student?.batch || shortYear(result.publishedDate)}
-      </span>
-
-      {/* Percentage / Grade */}
-      <span style={abs(1020, 739, 280, 28, 'right')}>
-        {result.percentage ? `${result.percentage}%` : ''}
-      </span>
-      <span style={abs(1000, 739, 240, 28, 'left')}>{result.grade || ''}</span>
-
-      {/* Date */}
-      <span style={abs(310, 891, 220, 24, 'center')}>
-        {result.publishedDate || ''}
-      </span>
-
-      {/* Institute Name */}
-      <span style={abs(90, 960, 500, 16, 'left', false)}>{instituteName}</span>
+      {fields.map((f, i) => (
+        <span
+          key={i}
+          style={abs(f.x, f.y, f.w, f.fontSize, f.align, f.bold)}
+        >
+          {f.text}
+        </span>
+      ))}
     </div>
   )
 }
 
-export default function CertificatePreview({ result, onClose }: CertificatePreviewProps) {
-  const previewRef = useRef<HTMLDivElement>(null)
+export default function CertificatePreview({ data, onClose }: CertificatePreviewProps) {
   const measureRef = useRef<HTMLDivElement>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [scale, setScale] = useState(0.5)
 
   const studentQuery = useQuery({
-    queryKey: ['student-for-certificate', result.studentId],
-    queryFn: () => studentsService.show(Number(result.studentId)),
-    enabled: !!result.studentId,
+    queryKey: ['student-for-certificate', data.studentId],
+    queryFn: () => studentsService.show(Number(data.studentId)),
+    enabled: !!data.studentId,
   })
 
   const student = studentQuery.data as any
@@ -174,15 +264,9 @@ export default function CertificatePreview({ result, onClose }: CertificatePrevi
   }, [])
 
   const handleDownloadPDF = async () => {
-    if (!previewRef.current) return
     setIsExporting(true)
     try {
-      const canvas = await html2canvas(previewRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-      })
+      const canvas = await renderCertificateToCanvas(data, student, course, instituteName)
       const imgData = canvas.toDataURL('image/jpeg', 0.95)
       const pdf = new jsPDF({
         orientation: 'landscape',
@@ -191,7 +275,7 @@ export default function CertificatePreview({ result, onClose }: CertificatePrevi
         hotfixes: ['px_scaling'],
       })
       pdf.addImage(imgData, 'JPEG', 0, 0, DESIGN_W, DESIGN_H)
-      pdf.save(`Certificate_${result.rollNo || result.studentName || 'Student'}.pdf`)
+      pdf.save(`Certificate_${data.certificateNo || data.rollNo || data.studentName || 'Student'}.pdf`)
     } catch (err) {
       console.error('Failed to export PDF:', err)
     } finally {
@@ -220,9 +304,12 @@ export default function CertificatePreview({ result, onClose }: CertificatePrevi
         </div>
 
         <div className="p-3 sm:p-4">
-          <div ref={measureRef} className="w-full overflow-hidden">
+          <div ref={measureRef} className="w-full overflow-hidden relative">
             <div
               style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
                 width: DESIGN_W,
                 height: DESIGN_H,
                 transform: `scale(${scale})`,
@@ -230,34 +317,14 @@ export default function CertificatePreview({ result, onClose }: CertificatePrevi
               }}
             >
               <CertificateContent
-                result={result}
+                data={data}
                 student={student}
                 course={course}
                 instituteName={instituteName}
               />
             </div>
-            <div style={{ height: DESIGN_H * scale }} />
-          </div>
-
-          <div
-            style={{
-              position: 'fixed',
-              left: '-10000px',
-              top: 0,
-              width: DESIGN_W,
-              height: DESIGN_H,
-              zIndex: -1,
-              pointerEvents: 'none',
-            }}
-          >
-            <div ref={previewRef}>
-              <CertificateContent
-                result={result}
-                student={student}
-                course={course}
-                instituteName={instituteName}
-              />
-            </div>
+            {/* Spacer reserves only the scaled height */}
+            <div style={{ height: DESIGN_H * scale, width: '100%' }} />
           </div>
 
           {studentQuery.isLoading && (

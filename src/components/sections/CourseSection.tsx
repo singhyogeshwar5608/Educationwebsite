@@ -38,7 +38,7 @@ function CourseCard({ course, index }: { course: Course; index: number }) {
             </span>
           </div>
 
-          <h3 className="text-lg font-bold text-navy leading-tight line-clamp-2 mt-2 mb-1 group-hover:text-navy-light transition-colors">
+          <h3 className="text-base font-semibold text-navy leading-tight line-clamp-2 mt-2 mb-1 group-hover:text-navy-light transition-colors">
             {course.title}
           </h3>
           <p className="text-sm text-text-gray leading-snug line-clamp-2">{course.subtitle}</p>

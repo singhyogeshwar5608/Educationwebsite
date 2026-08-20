@@ -9,10 +9,10 @@ export const publicService = {
     list: () => api.get('/course-categories').then((r) => r.data),
   },
   results: {
-    search: (rollNumber: string) => api.get('/results/search', { params: { roll_number: rollNumber } }).then((r) => r.data),
+    search: (registrationNumber: string) => api.get('/results/search', { params: { registration_number: registrationNumber } }).then((r) => r.data),
   },
   certificates: {
-    verify: (certNo: string) => api.get('/certificates/verify', { params: { cert_no: certNo } }).then((r) => r.data),
+    verify: (registrationNumber: string) => api.get('/certificates/verify', { params: { registration_number: registrationNumber } }).then((r) => r.data),
   },
   enquiries: {
     submit: (data: any) => api.post('/enquiries', data).then((r) => r.data),

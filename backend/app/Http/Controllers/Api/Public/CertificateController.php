@@ -12,14 +12,14 @@ class CertificateController extends Controller
 {
     public function verify(Request $request): JsonResponse
     {
-        $request->validate(['cert_no' => ['required', 'string']]);
+        $request->validate(['registration_number' => ['required', 'string']]);
 
         $certificate = Certificate::query()
             ->with(['student.course', 'result.subjectMarks'])
-            ->where('certificate_no', $request->cert_no)
+            ->whereHas('student', fn ($q) => $q->where('registration_number', $request->registration_number))
             ->first();
 
-        abort_if(!$certificate, 404, 'Certificate not found');
+        abort_if(!$certificate, 404, 'Certificate not found for this registration number');
 
         $student = $certificate->student;
         $course = $student->course;

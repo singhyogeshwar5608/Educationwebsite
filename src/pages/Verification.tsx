@@ -14,11 +14,11 @@ type SearchState = "idle" | "found" | "not_found";
 export default function Verification() {
   const [searchState, setSearchState] = useState<SearchState>("idle");
   const [certificate, setCertificate] = useState<CertificateData | null>(null);
-  const [searchedCertNo, setSearchedCertNo] = useState("");
+  const [searchedRegNo, setSearchedRegNo] = useState("");
 
   const handleSearch = (certNo: string) => {
     const found = findCertificateByNo(certNo);
-    setSearchedCertNo(certNo);
+    setSearchedRegNo(certNo);
     if (found) {
       setCertificate(found);
       setSearchState("found");
@@ -31,7 +31,7 @@ export default function Verification() {
   const handleReset = () => {
     setSearchState("idle");
     setCertificate(null);
-    setSearchedCertNo("");
+    setSearchedRegNo("");
   };
 
   return (
@@ -56,7 +56,7 @@ export default function Verification() {
 
         {searchState === "not_found" && (
           <AnimateOnScroll>
-            <NoCertificateFound certNo={searchedCertNo} onTryAgain={handleReset} />
+            <NoCertificateFound registrationNumber={searchedRegNo} onTryAgain={handleReset} />
           </AnimateOnScroll>
         )}
 

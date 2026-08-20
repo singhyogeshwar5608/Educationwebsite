@@ -225,7 +225,26 @@ export default function Footer() {
             Owner: Vijay Kumar Singla (M.Com, MBA)
           </p>
         </div>
+        {/* Designed By — animated gradient text */}
+        <div className="pb-4 flex justify-center items-center gap-2">
+          <span className="w-10 sm:w-14 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
+          <p className="text-sm sm:text-base font-semibold bg-gradient-to-r from-gold via-amber-300 to-gold bg-clip-text text-transparent animate-shimmer bg-[length:200%_auto]">
+            Designed by <span className="font-extrabold tracking-wide">Larawans</span>
+          </p>
+          <span className="w-10 sm:w-14 h-px bg-gradient-to-r from-transparent via-gold to-transparent" />
+        </div>
       </div>
+
+      {/* Shimmer animation */}
+      <style>{`
+        @keyframes shimmer {
+          0% { background-position: 200% center; }
+          100% { background-position: -200% center; }
+        }
+        .animate-shimmer {
+          animation: shimmer 3s linear infinite;
+        }
+      `}</style>
     </footer>
   );
 }

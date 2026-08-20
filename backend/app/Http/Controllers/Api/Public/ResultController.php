@@ -11,14 +11,14 @@ class ResultController extends Controller
 {
     public function search(Request $request): JsonResponse
     {
-        $request->validate(['roll_number' => ['required', 'string']]);
+        $request->validate(['registration_number' => ['required', 'string']]);
 
         $student = Student::query()
             ->with(['course', 'results.subjectMarks'])
-            ->where('roll_number', $request->roll_number)
+            ->where('registration_number', $request->registration_number)
             ->first();
 
-        abort_if(!$student, 404, 'Result not found for this roll number');
+        abort_if(!$student, 404, 'Result not found for this registration number');
 
         $result = $student->results->sortByDesc('issue_date')->first();
 
@@ -34,6 +34,7 @@ class ResultController extends Controller
 
         return response()->json([
             'rollNumber' => $student->roll_number,
+            'registrationNumber' => $student->registration_number,
             'studentName' => $student->name,
             'fatherName' => $student->father_name,
             'courseName' => $student->course?->title,

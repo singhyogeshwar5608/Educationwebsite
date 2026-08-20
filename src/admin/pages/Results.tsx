@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Search, Plus, Eye, Download, Trash2, ClipboardList, ChevronRight, ChevronLeft, CheckCircle2,
-  User, BookOpen, Calculator, AlertCircle, GraduationCap, FileText, Loader2, Award,
+  User, BookOpen, Calculator, AlertCircle, GraduationCap, FileText, Loader2,
 } from 'lucide-react'
 import {
   getCourseSubjects, getCourseDetails, calculateGrade,
@@ -16,7 +16,6 @@ import Panel from '@/admin/components/ui/Panel'
 import Card from '@/admin/components/ui/Card'
 import ExcelSpreadsheet from '@/admin/components/ExcelSpreadsheet'
 import ResultPreview from '@/admin/components/ResultPreview'
-import CertificatePreview from '@/admin/components/CertificatePreview'
 
 const ITEMS_PER_PAGE = 8
 
@@ -65,7 +64,6 @@ function Results() {
   const [pubCourseFilter, setPubCourseFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [viewResult, setViewResult] = useState<Result | null>(null)
-  const [viewCertificate, setViewCertificate] = useState<Result | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [genStep, setGenStep] = useState(1)
@@ -257,7 +255,6 @@ function Results() {
                       render: (r) => (
                         <div className="flex items-center justify-center gap-1">
                           <button onClick={() => setViewResult(r)} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="View Result"><Eye className="w-3.5 h-3.5" /></button>
-                          <button onClick={() => setViewCertificate(r)} className="p-1 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors" title="View Certificate"><Award className="w-3.5 h-3.5" /></button>
                           <button className="p-1 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="Download"><Download className="w-3.5 h-3.5" /></button>
                           <button onClick={() => setDeleteConfirm(r.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
@@ -421,11 +418,6 @@ function Results() {
       {/* View Result Preview */}
       {viewResult && (
         <ResultPreview result={viewResult} onClose={() => setViewResult(null)} />
-      )}
-
-      {/* View Certificate Preview */}
-      {viewCertificate && (
-        <CertificatePreview result={viewCertificate} onClose={() => setViewCertificate(null)} />
       )}
 
       {/* Delete Confirmation */}

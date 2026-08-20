@@ -22,6 +22,14 @@ const ARIAL = "Arial, 'Helvetica Neue', Helvetica, sans-serif"
 const DESIGN_W = 1024
 const DESIGN_H = 1536
 
+// Marks table geometry (matches the table overlay below).
+const MARKS_TABLE_TOP = 878
+const MARKS_ROW_H = 47.5
+const MARKS_FONT = 18
+// Subject code column — absolute overlay, centered 100px right of original (~99px center).
+const SUBJECT_CODE_X = 49
+const SUBJECT_CODE_W = 100
+
 function shortYear(fullBatchOrDate: string | undefined | null): string {
   if (!fullBatchOrDate) return ''
   if (fullBatchOrDate.includes('-')) {
@@ -91,6 +99,10 @@ function MarksheetContent({
         0),
     0,
   )
+  const calcTotalPassing = subjects.reduce(
+    (sum, sub) => sum + (sub.passingMarks ?? (sub as any).passing_marks ?? 33),
+    0,
+  )
 
   const rows = subjects.map((sub, i) => {
     const code = (sub as any).code || (sub as any).subject_code || String(i + 1).padStart(2, '0')
@@ -106,7 +118,18 @@ function MarksheetContent({
       (sub as any).total_marks ??
       (sub as any).total ??
       theoryObt + practicalObt
-    return { code, name, maxMarks, theoryMax, theoryObt, practicalMax, practicalObt, subjectTotal }
+    const passingMarks = sub.passingMarks ?? (sub as any).passing_marks ?? 33
+    return {
+      code,
+      name,
+      maxMarks,
+      theoryMax,
+      theoryObt,
+      practicalMax,
+      practicalObt,
+      subjectTotal,
+      passingMarks,
+    }
   })
 
   return (
@@ -124,23 +147,23 @@ function MarksheetContent({
       }}
     >
       {/* Roll No & Reg No */}
-      <span style={abs(190, 50, 150, 19, 'left')}>{result.rollNo || '—'}</span>
-      <span style={abs(760, 50, 170, 19, 'right')}>{student?.registrationNo || '—'}</span>
+      <span style={abs(140,49, 150, 21, 'left')}>{result.rollNo || '—'}</span>
+      <span style={abs(755, 49, 170, 21, 'right')}>{student?.registrationNo || '—'}</span>
 
       {/* Course Title */}
-      <span style={abs(175, 501, 670, 27, 'center')}>{result.course || ''}</span>
+      <span style={abs(175, 470, 670, 27, 'center')}>{result.course || ''}</span>
 
       {/* Student Details */}
       <span style={abs(275, 568, 330, 20, 'left')}>{result.studentName || ''}</span>
-      <span style={abs(680, 568, 235, 20, 'left')}>{student?.dob || ''}</span>
+      <span style={abs(780, 568, 235, 20, 'left')}>{student?.dob || ''}</span>
 
       <span style={abs(275, 611, 330, 20, 'left')}>{student?.fatherName || ''}</span>
-      <span style={abs(720, 611, 200, 20, 'left')}>
+      <span style={abs(820, 611, 200, 20, 'left')}>
         {student?.duration || (result as any)?.duration || '1 Year'}
       </span>
 
       <span style={abs(275, 655, 330, 20, 'left')}>{student?.motherName || ''}</span>
-      <span style={abs(685, 655, 235, 20, 'left')}>
+      <span style={abs(785, 655, 235, 20, 'left')}>
         {student?.batch || shortYear(result.publishedDate)}
       </span>
 
@@ -197,9 +220,13 @@ function MarksheetContent({
         <tbody>
           {rows.map((r, i) => (
             <tr key={i} style={{ height: '47.5px' }}>
-              <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '0 2px' }}>
-                {r.code}
-              </td>
+              <td
+                style={{
+                  textAlign: 'center',
+                  verticalAlign: 'middle',
+                  padding: '0 2px',
+                }}
+              ></td>
               <td
                 style={{
                   textAlign: 'left',
@@ -216,7 +243,7 @@ function MarksheetContent({
                 {r.maxMarks}
               </td>
               <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '0 2px' }}>
-                {r.theoryMax}
+                {r.passingMarks}
               </td>
               <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '0 2px' }}>
                 {r.theoryObt}
@@ -234,6 +261,22 @@ function MarksheetContent({
           ))}
         </tbody>
       </table>
+
+      {/* Subject code overlay — absolute so it can be aligned independently of the table */}
+      {rows.map((r, i) => (
+        <span
+          key={`code-${i}`}
+          style={abs(
+            SUBJECT_CODE_X,
+            MARKS_TABLE_TOP + i * MARKS_ROW_H + (MARKS_ROW_H - MARKS_FONT) / 2,
+            SUBJECT_CODE_W,
+            MARKS_FONT,
+            'center',
+          )}
+        >
+          {r.code}
+        </span>
+      ))}
 
       {/* TOTAL Row Overlay */}
       <table
@@ -263,12 +306,12 @@ function MarksheetContent({
         <tbody>
           <tr style={{ height: '47px' }}>
             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}></td>
-            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>TOTAL</td>
+            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}></td>
             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
               {result.maxTotal ?? calcTotalMax}
             </td>
             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-              {result.maxTotal ?? calcTotalMax}
+              {calcTotalPassing}
             </td>
             <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
               {result.total ?? calcTotalObt}
@@ -287,9 +330,9 @@ function MarksheetContent({
         <div
           style={{
             position: 'absolute',
-            left: '86%',
-            top: '88.5%',
-            width: '7.5%',
+            left: '480px',
+            top: '1399px',
+            width: '77px',
             aspectRatio: '1',
             background: '#fff',
             padding: '1px',

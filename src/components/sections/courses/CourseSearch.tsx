@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, SlidersHorizontal, X, Check, ChevronDown } from "lucide-react";
+import { Search, SlidersHorizontal, X, Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface CourseSearchProps {
@@ -29,8 +29,16 @@ export default function CourseSearch({
 }: CourseSearchProps) {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
+  const [viewAllCats, setViewAllCats] = useState(false);
   const categoryRef = useRef<HTMLDivElement>(null);
+  const catScrollRef = useRef<HTMLDivElement>(null);
   const hasFilters = activeCategory !== "All Courses" || activeLevel !== "All Levels" || searchQuery;
+
+  const scrollCats = (dir: "left" | "right") => {
+    const el = catScrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === "left" ? -300 : 300, behavior: "smooth" });
+  };
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -146,20 +154,74 @@ export default function CourseSearch({
         </div>
 
         {/* Category Chips - Desktop */}
-        <div className="hidden md:flex flex-wrap items-center gap-2.5 mt-5">
-          {categories.map((cat) => (
+        <div className="hidden md:block mt-5">
+          {viewAllCats ? (
+            /* View All: expanded downward (multi-row wrap) */
+            <div className="flex flex-wrap items-center gap-2.5">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => onCategoryChange(cat)}
+                  className={`whitespace-nowrap px-4.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 border shadow-sm ${
+                    activeCategory === cat
+                      ? "bg-navy text-white border-navy shadow-md shadow-navy/25"
+                      : "bg-[#F5F8FF] text-navy border-gray-200/70 hover:bg-navy/10 hover:border-navy/20 hover:shadow-md hover:-translate-y-0.5"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          ) : (
+            /* Collapsed: single row with horizontal slide */
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => scrollCats("left")}
+                className="shrink-0 w-9 h-9 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-navy hover:bg-navy hover:text-white transition-colors"
+                aria-label="Scroll categories left"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div
+                ref={catScrollRef}
+                className="flex-1 flex items-center gap-2.5 overflow-x-auto scroll-smooth hide-scrollbar"
+                style={{ scrollbarWidth: "none" }}
+              >
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => onCategoryChange(cat)}
+                    className={`whitespace-nowrap px-4.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 border shadow-sm ${
+                      activeCategory === cat
+                        ? "bg-navy text-white border-navy shadow-md shadow-navy/25"
+                        : "bg-[#F5F8FF] text-navy border-gray-200/70 hover:bg-navy/10 hover:border-navy/20 hover:shadow-md hover:-translate-y-0.5"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => scrollCats("right")}
+                className="shrink-0 w-9 h-9 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-navy hover:bg-navy hover:text-white transition-colors"
+                aria-label="Scroll categories right"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* View All / View Less toggle — always visible below */}
+          <div className="mt-3">
             <button
-              key={cat}
-              onClick={() => onCategoryChange(cat)}
-              className={`whitespace-nowrap px-4.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0 border shadow-sm ${
-                activeCategory === cat
-                  ? "bg-navy text-white border-navy shadow-md shadow-navy/25"
-                  : "bg-[#F5F8FF] text-navy border-gray-200/70 hover:bg-navy/10 hover:border-navy/20 hover:shadow-md hover:-translate-y-0.5"
-              }`}
+              onClick={() => setViewAllCats((v) => !v)}
+              className="whitespace-nowrap px-4 py-2.5 rounded-xl text-sm font-semibold bg-navy text-white border border-navy shadow-md shadow-navy/25 hover:bg-navy-light transition-all"
             >
-              {cat}
+              {viewAllCats ? "View Less" : "View All"}
             </button>
-          ))}
+          </div>
         </div>
 
         {/* Results Count + Clear */}

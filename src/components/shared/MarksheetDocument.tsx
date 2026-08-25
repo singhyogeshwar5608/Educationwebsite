@@ -5,19 +5,62 @@ import { RESULT_BG_BASE64 } from "@/admin/components/resultBgBase64";
 // Shared marksheet document — renders the marksheet at its native 1024x1536
 // (portrait) size with fields at the EXACT same coordinates used in the admin
 // panel, so the public preview/download always matches.
-const DESIGN_W = 1024;
-const DESIGN_H = 1536;
+// Load an image for canvas use. Hostinger's CDN strips Access-Control-Allow-*
+// headers from any URL ending in an image extension, which taints the canvas.
+// So we fetch a base64 JSON payload from /api/storage-base64 (extension-free
+// URL — treated as dynamic by the CDN, CORS survives) and draw a data: URL,
+// which is always canvas-safe.
+function loadImageCorsFallback(src: string): Promise<HTMLImageElement> {
+  const load = (url: string) =>
+    new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = url;
+    });
 
-const MARKS_TABLE_TOP = 878;
-const MARKS_ROW_H = 47.5;
+  // https://host/storage/students/x.jpg -> https://host/api/storage-base64?path=students/x.jpg
+  const m = src.match(/\/storage\/(.+)$/);
+  const origin = new URL(src, window.location.href).origin;
+  const proxySrc = `${origin}/api/storage-base64?path=${encodeURIComponent(m ? m[1] : "")}`;
+
+  return fetch(proxySrc)
+    .then((r) => {
+      if (!r.ok) throw new Error("proxy failed");
+      return r.json();
+    })
+    .then((json) => {
+      if (!json?.data) throw new Error("no data");
+      return load(json.data as string);
+    })
+    .catch(() => load(src));
+}
+
+/** Format any date string to Indian standard DD-MM-YYYY */
+function fmtDate(v?: string | null): string {
+  if (!v) return "";
+  if (/^\d{2}-\d{2}-\d{4}$/.test(v)) return v;
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return v;
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+}
+
+const DESIGN_W = 1131;
+const DESIGN_H = 1600;
+
+const MARKS_TABLE_TOP = 915;
+const MARKS_ROW_H = 49.5;
 const MARKS_FONT = 18;
-const SUBJECT_CODE_X = 49;
-const SUBJECT_CODE_W = 100;
+const SUBJECT_CODE_X = 54;
+const SUBJECT_CODE_W = 110;
 const MARKS_COLS = [0.11003, 0.32902, 0.09709, 0.08954, 0.09924, 0.09169, 0.08954, 0.09385];
-const MARKS_TABLE_LEFT = 48;
-const MARKS_TABLE_W = 927;
-const MARKS_TOTAL_TOP = 1259;
-const MARKS_TOTAL_ROW_H = 47;
+const MARKS_TABLE_LEFT = 53;
+const MARKS_TABLE_W = 1024;
+const MARKS_TOTAL_TOP = 1311;
+const MARKS_TOTAL_ROW_H = 49;
 
 export interface MarksheetRow {
   code: string;
@@ -92,66 +135,75 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
     h: number,
     align: "left" | "center" | "right",
     value: string | number,
-    clip = false,
+    wrap = false,
+    offsetX = 0,
   ) => {
     if (value === "" || value === undefined || value === null) return;
     ctx.fillStyle = "#000";
     ctx.font = `700 18px ${font}`;
     ctx.textAlign = align;
     ctx.textBaseline = "middle";
-    let drawX = x;
-    if (align === "center") drawX = x + w / 2;
-    if (align === "right") drawX = x + w;
+    let drawX = x + offsetX;
+    if (align === "center") drawX = x + offsetX + w / 2;
+    if (align === "right") drawX = x + offsetX + w;
     const str = String(value);
-    if (!clip) {
+    if (!wrap) {
       ctx.fillText(str, drawX, y + h / 2);
       return;
     }
-    const textWidth = ctx.measureText(str).width;
-    if (textWidth <= w) {
-      ctx.fillText(str, drawX, y + h / 2);
-      return;
+    // Wrap long text into up to 2 centered lines so it stays inside its cell.
+    const words = str.split(/\s+/);
+    let line1 = "";
+    let line2 = "";
+    if (words.length === 1) {
+      // No spaces: hard-break the long word.
+      let mid = Math.floor(str.length / 2);
+      while (mid > 0 && ctx.measureText(str.slice(0, mid)).width > w) mid--;
+      line1 = str.slice(0, mid);
+      line2 = str.slice(mid);
+    } else {
+      for (const word of words) {
+        const candidate = line2 ? line2 + " " + word : word;
+        if (ctx.measureText(candidate).width <= w) {
+          line2 = candidate;
+        } else if (!line1) {
+          line1 = line2;
+          line2 = word;
+        } else {
+          line2 += " " + word;
+        }
+      }
     }
-    const ellipsis = "…";
-    const ellWidth = ctx.measureText(ellipsis).width;
-    let truncated = str;
-    while (truncated.length > 0 && ctx.measureText(truncated).width + ellWidth > w) {
-      truncated = truncated.slice(0, -1);
-    }
-    ctx.fillText(truncated + ellipsis, drawX, y + h / 2);
+    const lineH = 20;
+    if (line1) ctx.fillText(line1, drawX, y + h / 2 - lineH / 2);
+    if (line2) ctx.fillText(line2, drawX, y + h / 2 + lineH / 2);
   };
 
-  // Header fields
-  text(140, 49, 150, 21, "left", true, doc.rollNo || "—");
-  text(755, 49, 170, 21, "right", true, doc.registrationNo || "—");
-  text(175, 470, 670, 27, "center", true, doc.course || "");
-  text(275, 568, 330, 20, "left", true, doc.studentName || "");
-  text(780, 568, 235, 20, "left", true, doc.dob || "");
-  text(275, 611, 330, 20, "left", true, doc.fatherName || "");
-  text(820, 611, 200, 20, "left", true, doc.duration || "1 Year");
-  text(275, 655, 330, 20, "left", true, doc.motherName || "");
-  text(785, 655, 235, 20, "left", true, doc.batch || "");
-  text(275, 700, 540, 20, "left", true, doc.instituteName);
+  // Header fields (synced with admin ResultPreview)
+  text(170, 66, 165, 21, "left", true, doc.rollNo || "—");
+  text(805, 66, 188, 21, "right", true, doc.registrationNo || "—");
+  text(193, 503, 740, 27, "center", true, doc.course || "");
+  text(315, 603, 364, 20, "left", true, doc.studentName || "");
+  text(861, 603, 260, 20, "left", true, fmtDate(doc.dob));
+  text(315, 647, 364, 20, "left", true, doc.fatherName || "");
+  text(906, 649, 221, 20, "left", true, doc.duration || "1 Year");
+  text(315, 693, 364, 20, "left", true, doc.motherName || "");
+  text(890, 695, 260, 20, "left", true, doc.batch || "");
+  text(315, 742, 596, 20, "left", true, doc.instituteName);
 
-  // Student photo
+  // Student photo (match admin ResultPreview: 77%, 8.3%, 14.7%, 13.6%)
   if (doc.photo) {
-    const px = DESIGN_W * 0.78;
-    const py = DESIGN_H * 0.285;
-    const pw = DESIGN_W * 0.145;
-    const ph = DESIGN_H * 0.115;
+    const px = DESIGN_W * 0.77;
+    const py = DESIGN_H * 0.083;
+    const pw = DESIGN_W * 0.147;
+    const ph = DESIGN_H * 0.136;
     ctx.fillStyle = "#fff";
     ctx.fillRect(px, py, pw, ph);
     ctx.strokeStyle = "#000";
     ctx.lineWidth = 1.5;
     ctx.strokeRect(px, py, pw, ph);
     try {
-      const photo = new Image();
-      photo.crossOrigin = "anonymous";
-      photo.src = doc.photo;
-      await new Promise<void>((resolve, reject) => {
-        photo.onload = () => resolve();
-        photo.onerror = () => reject(new Error("Failed to load student photo"));
-      });
+      const photo = await loadImageCorsFallback(doc.photo);
       ctx.save();
       ctx.beginPath();
       ctx.rect(px, py, pw, ph);
@@ -169,7 +221,7 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
     let colX = MARKS_TABLE_LEFT;
     const cells: { align: "left" | "center"; value: string | number }[] = [
       { align: "center", value: "" },
-      { align: "left", value: r.name },
+      { align: "center", value: r.name },
       { align: "center", value: r.maxMarks },
       { align: "center", value: r.passingMarks },
       { align: "center", value: r.theoryObt },
@@ -180,7 +232,7 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
     cells.forEach((c, ci) => {
       const colW = MARKS_COLS[ci] * MARKS_TABLE_W;
       if (ci !== 0 && c.value !== "") {
-        cellText(colX, rowTop, colW, MARKS_ROW_H, c.align, c.value, ci === 1);
+        cellText(colX, rowTop, colW, MARKS_ROW_H, c.align, c.value, ci === 1, ci === 7 ? -18 : 0);
       }
       colX += colW;
     });
@@ -199,14 +251,17 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
   {
     const rowTop = MARKS_TOTAL_TOP;
     let colX = MARKS_TABLE_LEFT;
+    const totalTheoryObt = doc.rows.reduce((s, r) => s + r.theoryObt, 0);
+    const totalPracticalObt = doc.rows.reduce((s, r) => s + r.practicalObt, 0);
+    const totalPracticalMax = doc.rows.reduce((s, r) => s + r.practicalMax, 0);
     const cells: { align: "left" | "center"; value: string | number }[] = [
       { align: "center", value: "" },
       { align: "center", value: "" },
       { align: "center", value: doc.maxTotal },
       { align: "center", value: doc.totalPassing },
-      { align: "center", value: doc.total },
-      { align: "center", value: 0 },
-      { align: "center", value: 0 },
+      { align: "center", value: totalTheoryObt },
+      { align: "center", value: totalPracticalMax },
+      { align: "center", value: totalPracticalObt },
       { align: "center", value: doc.total },
     ];
     cells.forEach((c, ci) => {
@@ -216,9 +271,9 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
         ctx.font = `700 19px ${font}`;
         ctx.textAlign = c.align;
         ctx.textBaseline = "middle";
-        let drawX = colX;
-        if (c.align === "center") drawX = colX + colW / 2;
-        ctx.fillText(String(c.value), drawX, rowTop + MARKS_TOTAL_ROW_H / 2);
+        let drawX = colX + (ci === 7 ? -18 : 0);
+        if (c.align === "center") drawX = colX + (ci === 7 ? -18 : 0) + colW / 2;
+        ctx.fillText(String(c.value), drawX, rowTop + MARKS_TOTAL_ROW_H / 2 + 6);
       }
       colX += colW;
     });
@@ -309,25 +364,25 @@ export default function MarksheetDocument({
               backgroundPosition: "center",
             }}
           >
-            <span style={abs(140, 49, 150, 21, "left", true)}>{doc.rollNo || "—"}</span>
-            <span style={abs(755, 49, 170, 21, "right", true)}>{doc.registrationNo || "—"}</span>
-            <span style={abs(175, 470, 670, 27, "center", true)}>{doc.course || ""}</span>
-            <span style={abs(275, 568, 330, 20, "left", true)}>{doc.studentName || ""}</span>
-            <span style={abs(780, 568, 235, 20, "left", true)}>{doc.dob || ""}</span>
-            <span style={abs(275, 611, 330, 20, "left", true)}>{doc.fatherName || ""}</span>
-            <span style={abs(820, 611, 200, 20, "left", true)}>{doc.duration || "1 Year"}</span>
-            <span style={abs(275, 655, 330, 20, "left", true)}>{doc.motherName || ""}</span>
-            <span style={abs(785, 655, 235, 20, "left", true)}>{doc.batch || ""}</span>
-            <span style={abs(275, 700, 540, 20, "left", true)}>{doc.instituteName}</span>
+            <span style={abs(170, 66, 165, 21, "left", true)}>{doc.rollNo || "—"}</span>
+            <span style={abs(805, 66, 188, 21, "right", true)}>{doc.registrationNo || "—"}</span>
+            <span style={abs(193, 503, 740, 27, "center", true)}>{doc.course || ""}</span>
+            <span style={abs(315, 603, 364, 20, "left", true)}>{doc.studentName || ""}</span>
+            <span style={abs(861, 603, 260, 20, "left", true)}>{fmtDate(doc.dob)}</span>
+            <span style={abs(315, 647, 364, 20, "left", true)}>{doc.fatherName || ""}</span>
+            <span style={abs(906, 649, 221, 20, "left", true)}>{doc.duration || "1 Year"}</span>
+            <span style={abs(315, 693, 364, 20, "left", true)}>{doc.motherName || ""}</span>
+            <span style={abs(890, 695, 260, 20, "left", true)}>{doc.batch || ""}</span>
+            <span style={abs(315, 742, 596, 20, "left", true)}>{doc.instituteName}</span>
 
             {doc.photo && (
               <div
                 style={{
                   position: "absolute",
-                  left: "78%",
-                  top: "28.5%",
-                  width: "14.5%",
-                  height: "11.5%",
+                  left: "77%",
+                  top: "8.3%",
+                  width: "14.7%",
+                  height: "13.6%",
                   border: "1.5px solid #000",
                   overflow: "hidden",
                   background: "#fff",
@@ -336,7 +391,6 @@ export default function MarksheetDocument({
                 <img
                   src={doc.photo}
                   alt={doc.studentName}
-                  crossOrigin="anonymous"
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               </div>
@@ -372,22 +426,32 @@ export default function MarksheetDocument({
                     <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px" }}></td>
                     <td
                       style={{
-                        textAlign: "left",
+                        textAlign: "center",
                         verticalAlign: "middle",
                         padding: "0 4px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        lineHeight: 1.1,
+                        height: `${MARKS_ROW_H}px`,
                       }}
                     >
-                      {r.name}
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          height: "100%",
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        {r.name}
+                      </div>
                     </td>
                     <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px" }}>{r.maxMarks}</td>
                     <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px" }}>{r.passingMarks}</td>
                     <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px" }}>{r.theoryObt}</td>
                     <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px" }}>{r.practicalMax}</td>
                     <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px" }}>{r.practicalObt}</td>
-                    <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px" }}>{r.subjectTotal}</td>
+                    <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px", position: "relative", left: "-18px" }}>{r.subjectTotal}</td>
                   </tr>
                 ))}
               </tbody>
@@ -435,14 +499,14 @@ export default function MarksheetDocument({
               </colgroup>
               <tbody>
                 <tr style={{ height: `${MARKS_TOTAL_ROW_H}px` }}>
-                  <td style={{ textAlign: "center", verticalAlign: "middle" }}></td>
-                  <td style={{ textAlign: "center", verticalAlign: "middle" }}></td>
-                  <td style={{ textAlign: "center", verticalAlign: "middle" }}>{doc.maxTotal}</td>
-                  <td style={{ textAlign: "center", verticalAlign: "middle" }}>{doc.totalPassing}</td>
-                  <td style={{ textAlign: "center", verticalAlign: "middle" }}>{doc.total}</td>
-                  <td style={{ textAlign: "center", verticalAlign: "middle" }}>0</td>
-                  <td style={{ textAlign: "center", verticalAlign: "middle" }}>0</td>
-                  <td style={{ textAlign: "center", verticalAlign: "middle" }}>{doc.total}</td>
+                  <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}></td>
+                  <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}></td>
+                  <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}>{doc.maxTotal}</td>
+                  <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}>{doc.totalPassing}</td>
+                  <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}>{doc.rows.reduce((s, r) => s + r.theoryObt, 0)}</td>
+                  <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}>{doc.rows.reduce((s, r) => s + r.practicalMax, 0)}</td>
+                  <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}>{doc.rows.reduce((s, r) => s + r.practicalObt, 0)}</td>
+                  <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px", position: "relative", left: "-18px" }}>{doc.total}</td>
                 </tr>
               </tbody>
             </table>

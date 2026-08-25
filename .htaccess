@@ -10,6 +10,20 @@
 #   backend/            <- Laravel backend
 #   .htaccess           <- this file
 
+# ── CORS headers ───────────────────────────────────────────────────────────
+# Set BEFORE any rewriting so they reliably apply to the final response on
+# LiteSpeed/Apache. Needed so cross-origin frontends (localhost:3002 during dev,
+# and any https frontend) can draw /storage images and /api responses onto a
+# canvas for PDF export.
+<IfModule mod_headers.c>
+    <If "%{REQUEST_URI} =~ m#^/(storage|api)/#">
+        Header always set Access-Control-Allow-Origin "*"
+        Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-XSRF-TOKEN"
+        Header always set Access-Control-Max-Age "86400"
+    </If>
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 

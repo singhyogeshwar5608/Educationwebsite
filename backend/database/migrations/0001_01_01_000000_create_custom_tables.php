@@ -105,6 +105,8 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->text('address')->nullable();
             $table->string('photo')->nullable();
+            $table->string('aadhaar_card')->nullable();
+            $table->string('matric_dmc')->nullable();
             $table->string('batch')->nullable();
             $table->string('status')->default('Active');
             $table->date('admission_date')->nullable();
@@ -122,6 +124,9 @@ return new class extends Migration
             $table->string('mobile', 20);
             $table->string('email')->nullable();
             $table->text('address')->nullable();
+            $table->string('photo')->nullable();
+            $table->string('aadhaar_card')->nullable();
+            $table->string('matric_dmc')->nullable();
             $table->string('batch')->nullable();
             $table->string('status')->default('Pending');
             $table->date('applied_date')->nullable();
@@ -148,6 +153,11 @@ return new class extends Migration
             $table->string('subject_name');
             $table->integer('max_marks');
             $table->integer('obtained_marks');
+            $table->integer('passing_marks')->default(33);
+            $table->integer('theory_max_marks')->nullable();
+            $table->integer('theory_obtained_marks')->nullable();
+            $table->integer('practical_max_marks')->nullable();
+            $table->integer('practical_obtained_marks')->nullable();
             $table->foreignId('result_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
         });

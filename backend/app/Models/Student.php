@@ -10,7 +10,7 @@ class Student extends Model
 {
     protected $fillable = [
         'roll_number', 'registration_number', 'name', 'father_name', 'mother_name',
-        'date_of_birth', 'gender', 'mobile', 'email', 'address', 'photo',
+        'date_of_birth', 'gender', 'mobile', 'email', 'address', 'photo', 'aadhaar_card', 'matric_dmc',
         'batch', 'status', 'admission_date', 'course_id',
     ];
 

@@ -35,7 +35,8 @@ export interface Student {
   address: string; course: string; courseId: string; batch: string;
   admissionDate: string; registrationNo: string; rollNo: string;
   status: 'Active' | 'Inactive' | 'Graduated';
-  photo?: string; resultPublished?: boolean; passed?: boolean;
+  photo?: string; aadhaarCard?: string; matricDmc?: string;
+  resultPublished?: boolean; passed?: boolean;
   certificateIssued?: boolean; percentage?: number; grade?: string;
   results?: StudentResult | null;
   certificate?: StudentCertificate | null;
@@ -79,12 +80,13 @@ export interface AdmissionRequest {
   status: 'Pending' | 'Approved' | 'Rejected';
   fatherName: string; motherName?: string | null; dob: string; gender?: string | null;
   address: string; batch?: string | null;
+  photo?: string; aadhaarCard?: string; matricDmc?: string;
 }
 
 export interface Result {
   id: string; studentId: string; studentName: string; course: string;
   rollNo?: string;
-  subjects: { name: string; marks: number; maxMarks: number; passingMarks: number }[];
+  subjects: { name: string; marks: number; maxMarks: number; passingMarks: number; theoryMaxMarks?: number; theoryMarks?: number; practicalMaxMarks?: number; practicalMarks?: number }[];
   total: number; maxTotal: number; percentage: number;
   grade: string; pass: boolean; publishedDate: string;
 }

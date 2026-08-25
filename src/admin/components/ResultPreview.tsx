@@ -15,19 +15,31 @@ interface ResultPreviewProps {
 
 const ARIAL = "Arial, 'Helvetica Neue', Helvetica, sans-serif"
 
+/** Format any date string to Indian standard DD-MM-YYYY */
+function fmtDate(v?: string | null): string {
+  if (!v) return "";
+  if (/^\d{2}-\d{2}-\d{4}$/.test(v)) return v;
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return v;
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+}
+
 // The background design (result.jpeg) is exactly 1024x1536. The capture
 // element is rendered at this fixed size so the overlay text sits 1:1 on the
 // design — no cqw units, no aspect-ratio stretching (RSS-style approach).
-const DESIGN_W = 1024
-const DESIGN_H = 1536
+const DESIGN_W = 1131
+const DESIGN_H = 1600
 
 // Marks table geometry (matches the table overlay below).
-const MARKS_TABLE_TOP = 878
-const MARKS_ROW_H = 47.5
+const MARKS_TABLE_TOP = 915
+const MARKS_ROW_H = 49.5
 const MARKS_FONT = 18
-// Subject code column — absolute overlay, centered 100px right of original (~99px center).
-const SUBJECT_CODE_X = 49
-const SUBJECT_CODE_W = 100
+// Subject code column — absolute overlay.
+const SUBJECT_CODE_X = 54
+const SUBJECT_CODE_W = 110
 
 function shortYear(fullBatchOrDate: string | undefined | null): string {
   if (!fullBatchOrDate) return ''
@@ -43,6 +55,37 @@ function shortYear(fullBatchOrDate: string | undefined | null): string {
     return `${d}-${String(n + 1).slice(2)}`
   }
   return fullBatchOrDate
+}
+
+// Load an image for canvas use. Hostinger's CDN strips Access-Control-Allow-*
+// headers from any URL ending in an image extension, which taints the canvas.
+// So we fetch a base64 JSON payload from /api/storage-base64 (extension-free
+// URL — treated as dynamic by the CDN, CORS survives) and draw a data: URL,
+// which is always canvas-safe.
+function loadImageCorsFallback(src: string): Promise<HTMLImageElement> {
+  const load = (url: string) =>
+    new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = () => reject(new Error('Failed to load image'))
+      img.src = url
+    })
+
+  // https://host/storage/students/x.jpg -> https://host/api/storage-base64?path=students/x.jpg
+  const m = src.match(/\/storage\/(.+)$/)
+  const origin = new URL(src, window.location.href).origin
+  const proxySrc = `${origin}/api/storage-base64?path=${encodeURIComponent(m ? m[1] : '')}`
+
+  return fetch(proxySrc)
+    .then((r) => {
+      if (!r.ok) throw new Error('proxy failed')
+      return r.json()
+    })
+    .then((json) => {
+      if (!json?.data) throw new Error('no data')
+      return load(json.data as string)
+    })
+    .catch(() => load(src))
 }
 
 interface SubjectRow {
@@ -91,10 +134,10 @@ function buildSubjectRows(result: Result): SubjectRow[] {
 // Marks table column widths (same percentages as the HTML <table>), as fractions
 // of the table width, so both the preview and the canvas export share them.
 const MARKS_COLS = [0.11003, 0.32902, 0.09709, 0.08954, 0.09924, 0.09169, 0.08954, 0.09385]
-const MARKS_TABLE_LEFT = 48
-const MARKS_TABLE_W = 927
-const MARKS_TOTAL_TOP = 1259
-const MARKS_TOTAL_ROW_H = 47
+const MARKS_TABLE_LEFT = 53
+const MARKS_TABLE_W = 1024
+const MARKS_TOTAL_TOP = 1311
+const MARKS_TOTAL_ROW_H = 49
 
 // Draw the marksheet onto a canvas: background + every field/table cell at exact
 // coordinates. Used by the PDF export — html2canvas is unreliable with absolute
@@ -152,68 +195,74 @@ async function renderMarksheetToCanvas(
     h: number,
     align: 'left' | 'center' | 'right',
     value: string | number,
-    clip = false,
+    wrap = false,
+    offsetX = 0,
   ) => {
     if (value === '' || value === undefined || value === null) return
     ctx.fillStyle = '#000'
     ctx.font = `700 18px ${font}`
     ctx.textAlign = align
     ctx.textBaseline = 'middle'
-    let drawX = x
-    if (align === 'center') drawX = x + w / 2
-    if (align === 'right') drawX = x + w
+    let drawX = x + offsetX
+    if (align === 'center') drawX = x + offsetX + w / 2
+    if (align === 'right') drawX = x + offsetX + w
     const str = String(value)
-    if (!clip) {
+    if (!wrap) {
       ctx.fillText(str, drawX, y + h / 2)
       return
     }
-    // Clip long text to the cell width (matching the HTML <td> which uses
-    // whiteSpace:nowrap + overflow:hidden + textOverflow:ellipsis).
-    const textWidth = ctx.measureText(str).width
-    if (textWidth <= w) {
-      ctx.fillText(str, drawX, y + h / 2)
-      return
+    // Wrap long text into up to 2 centered lines so it stays inside its cell.
+    const words = str.split(/\s+/)
+    let line1 = ''
+    let line2 = ''
+    if (words.length === 1) {
+      let mid = Math.floor(str.length / 2)
+      while (mid > 0 && ctx.measureText(str.slice(0, mid)).width > w) mid--
+      line1 = str.slice(0, mid)
+      line2 = str.slice(mid)
+    } else {
+      for (const word of words) {
+        const candidate = line2 ? line2 + ' ' + word : word
+        if (ctx.measureText(candidate).width <= w) {
+          line2 = candidate
+        } else if (!line1) {
+          line1 = line2
+          line2 = word
+        } else {
+          line2 += ' ' + word
+        }
+      }
     }
-    const ellipsis = '…'
-    const ellWidth = ctx.measureText(ellipsis).width
-    let truncated = str
-    while (truncated.length > 0 && ctx.measureText(truncated).width + ellWidth > w) {
-      truncated = truncated.slice(0, -1)
-    }
-    ctx.fillText(truncated + ellipsis, drawX, y + h / 2)
+    const lineH = 20
+    if (line1) ctx.fillText(line1, drawX, y + h / 2 - lineH / 2)
+    if (line2) ctx.fillText(line2, drawX, y + h / 2 + lineH / 2)
   }
 
   // Header fields
-  text(140, 49, 150, 21, 'left', true, result.rollNo || '—')
-  text(755, 49, 170, 21, 'right', true, student?.registrationNo || '—')
-  text(175, 470, 670, 27, 'center', true, result.course || '')
-  text(275, 568, 330, 20, 'left', true, result.studentName || '')
-  text(780, 568, 235, 20, 'left', true, student?.dob || '')
-  text(275, 611, 330, 20, 'left', true, student?.fatherName || '')
-  text(820, 611, 200, 20, 'left', true, student?.duration || (result as any)?.duration || '1 Year')
-  text(275, 655, 330, 20, 'left', true, student?.motherName || '')
-  text(785, 655, 235, 20, 'left', true, student?.batch || shortYear(result.publishedDate))
-  text(275, 700, 540, 20, 'left', true, instituteName)
+  text(170, 66, 165, 21, 'left', true, result.rollNo || '—')
+  text(805, 66, 188, 21, 'right', true, student?.registrationNo || '—')
+  text(193, 503, 740, 27, 'center', true, result.course || '')
+  text(315, 603, 364, 20, 'left', true, result.studentName || '')
+  text(861, 603, 260, 20, 'left', true, fmtDate(student?.dob))
+  text(315, 647, 364, 20, 'left', true, student?.fatherName || '')
+  text(906, 649, 221, 20, 'left', true, student?.duration || (result as any)?.duration || '1 Year')
+  text(315, 693, 364, 20, 'left', true, student?.motherName || '')
+  text(890, 695, 260, 20, 'left', true, student?.batch || shortYear(result.publishedDate))
+  text(315, 742, 596, 20, 'left', true, instituteName)
 
   // Student photo (if available)
   if (student?.photo) {
-    const px = DESIGN_W * 0.78
-    const py = DESIGN_H * 0.285
-    const pw = DESIGN_W * 0.145
-    const ph = DESIGN_H * 0.115
+    const px = DESIGN_W * 0.77
+    const py = DESIGN_H * 0.083
+    const pw = DESIGN_W * 0.147
+    const ph = DESIGN_H * 0.136
     ctx.fillStyle = '#fff'
     ctx.fillRect(px, py, pw, ph)
     ctx.strokeStyle = '#000'
     ctx.lineWidth = 1.5
     ctx.strokeRect(px, py, pw, ph)
     try {
-      const photo = new Image()
-      photo.crossOrigin = 'anonymous'
-      photo.src = student.photo
-      await new Promise<void>((resolve, reject) => {
-        photo.onload = () => resolve()
-        photo.onerror = () => reject(new Error('Failed to load student photo'))
-      })
+      const photo = await loadImageCorsFallback(student.photo)
       ctx.save()
       ctx.beginPath()
       ctx.rect(px, py, pw, ph)
@@ -231,7 +280,7 @@ async function renderMarksheetToCanvas(
     let colX = MARKS_TABLE_LEFT
     const cells: { align: 'left' | 'center'; value: string | number }[] = [
       { align: 'center', value: '' },
-      { align: 'left', value: r.name },
+      { align: 'center', value: r.name },
       { align: 'center', value: r.maxMarks },
       { align: 'center', value: r.passingMarks },
       { align: 'center', value: r.theoryObt },
@@ -242,7 +291,7 @@ async function renderMarksheetToCanvas(
     cells.forEach((c, ci) => {
       const colW = MARKS_COLS[ci] * MARKS_TABLE_W
       if (ci !== 0 && c.value !== '') {
-        cellText(colX, rowTop, colW, MARKS_ROW_H, c.align, c.value, ci === 1)
+        cellText(colX, rowTop, colW, MARKS_ROW_H, c.align, c.value, ci === 1, ci === 7 ? -18 : 0)
       }
       colX += colW
     })
@@ -262,14 +311,17 @@ async function renderMarksheetToCanvas(
   {
     const rowTop = MARKS_TOTAL_TOP
     let colX = MARKS_TABLE_LEFT
+    const totalTheoryObt = rows.reduce((s, r) => s + r.theoryObt, 0)
+    const totalPracticalObt = rows.reduce((s, r) => s + r.practicalObt, 0)
+    const totalPracticalMax = rows.reduce((s, r) => s + r.practicalMax, 0)
     const cells: { align: 'left' | 'center'; value: string | number }[] = [
       { align: 'center', value: '' },
       { align: 'center', value: '' },
       { align: 'center', value: result.maxTotal ?? calcTotalMax },
       { align: 'center', value: calcTotalPassing },
-      { align: 'center', value: result.total ?? calcTotalObt },
-      { align: 'center', value: 0 },
-      { align: 'center', value: 0 },
+      { align: 'center', value: totalTheoryObt },
+      { align: 'center', value: totalPracticalMax },
+      { align: 'center', value: totalPracticalObt },
       { align: 'center', value: result.total ?? calcTotalObt },
     ]
     cells.forEach((c, ci) => {
@@ -279,32 +331,44 @@ async function renderMarksheetToCanvas(
         ctx.font = `700 19px ${font}`
         ctx.textAlign = c.align
         ctx.textBaseline = 'middle'
-        let drawX = colX
-        if (c.align === 'center') drawX = colX + colW / 2
-        ctx.fillText(String(c.value), drawX, rowTop + MARKS_TOTAL_ROW_H / 2)
+        let drawX = colX + (ci === 7 ? -18 : 0)
+        if (c.align === 'center') drawX = colX + (ci === 7 ? -18 : 0) + colW / 2
+        ctx.fillText(String(c.value), drawX, rowTop + MARKS_TOTAL_ROW_H / 2 + 6)
       }
       colX += colW
     })
   }
 
-  // QR code
-  if (qrCodeUrl) {
+  return canvas
+}
+
+// Standalone PDF download (used by row download buttons outside the modal).
+export async function downloadResultPdf(
+  result: Result,
+  student?: any,
+  instituteName?: string,
+): Promise<void> {
+  const resolvedStudent = student ?? (result.studentId ? await studentsService.show(Number(result.studentId)) : null)
+  let resolvedInstitute = instituteName ?? 'Z-TECH CAREER ACADEMY'
+  if (!resolvedInstitute) {
     try {
-      const qr = new Image()
-      qr.src = qrCodeUrl
-      await new Promise<void>((resolve, reject) => {
-        qr.onload = () => resolve()
-        qr.onerror = () => reject(new Error('Failed to load QR code'))
-      })
-      ctx.fillStyle = '#fff'
-      ctx.fillRect(480, 1399, 77, 77)
-      ctx.drawImage(qr, 480, 1399, 77, 77)
+      const settings = await settingsService.get()
+      resolvedInstitute = (settings as any)?.institute?.instituteName || 'Z-TECH CAREER ACADEMY'
     } catch {
-      /* QR optional */
+      resolvedInstitute = 'Z-TECH CAREER ACADEMY'
     }
   }
-
-  return canvas
+  // Results don't have QR codes like certificates; pass empty string
+  const canvas = await renderMarksheetToCanvas(result, resolvedStudent, resolvedInstitute, '')
+  const imgData = canvas.toDataURL('image/jpeg', 0.95)
+  const pdf = new jsPDF({
+    orientation: 'portrait',
+    unit: 'px',
+    format: [DESIGN_W, DESIGN_H],
+    hotfixes: ['px_scaling'],
+  })
+  pdf.addImage(imgData, 'JPEG', 0, 0, DESIGN_W, DESIGN_H)
+  pdf.save(`Result_${result.rollNo || result.studentName || 'Student'}.pdf`)
 }
 
 // ── The actual marksheet content ──────────────────────────────────────────
@@ -381,37 +445,37 @@ function MarksheetContent({
       }}
     >
       {/* Roll No & Reg No */}
-      <span style={abs(140,49, 150, 21, 'left')}>{result.rollNo || '—'}</span>
-      <span style={abs(755, 49, 170, 21, 'right')}>{student?.registrationNo || '—'}</span>
+      <span style={abs(170,67, 165, 21, 'left')}>{result.rollNo || '—'}</span>
+      <span style={abs(805, 67, 188, 21, 'right')}>{student?.registrationNo || '—'}</span>
 
       {/* Course Title */}
-      <span style={abs(175, 470, 670, 27, 'center')}>{result.course || ''}</span>
+      <span style={abs(193, 503, 740, 27, 'center')}>{result.course || ''}</span>
 
       {/* Student Details */}
-      <span style={abs(275, 568, 330, 20, 'left')}>{result.studentName || ''}</span>
-      <span style={abs(780, 568, 235, 20, 'left')}>{student?.dob || ''}</span>
+      <span style={abs(315, 603, 364, 20, 'left')}>{result.studentName || ''}</span>
+      <span style={abs(861, 603, 260, 20, 'left')}>{fmtDate(student?.dob)}</span>
 
-      <span style={abs(275, 611, 330, 20, 'left')}>{student?.fatherName || ''}</span>
-      <span style={abs(820, 611, 200, 20, 'left')}>
+      <span style={abs(315, 647, 364, 20, 'left')}>{student?.fatherName || ''}</span>
+      <span style={abs(906, 649, 221, 20, 'left')}>
         {student?.duration || (result as any)?.duration || '1 Year'}
       </span>
 
-      <span style={abs(275, 655, 330, 20, 'left')}>{student?.motherName || ''}</span>
-      <span style={abs(785, 655, 235, 20, 'left')}>
+      <span style={abs(315, 693, 364, 20, 'left')}>{student?.motherName || ''}</span>
+      <span style={abs(890, 695, 260, 20, 'left')}>
         {student?.batch || shortYear(result.publishedDate)}
       </span>
 
-      <span style={abs(275, 700, 540, 20, 'left')}>{instituteName}</span>
+      <span style={abs(315, 742, 596, 20, 'left')}>{instituteName}</span>
 
       {/* Student Photo (if available) */}
       {student?.photo && (
         <div
           style={{
             position: 'absolute',
-            left: '78%',
-            top: '28.5%',
-            width: '14.5%',
-            height: '11.5%',
+            left: '77%',
+            top: '8.3%',
+            width: '14.7%',
+            height: '13.6%',
             border: '1.5px solid #000',
             overflow: 'hidden',
             background: '#fff',
@@ -420,7 +484,6 @@ function MarksheetContent({
           <img
             src={student.photo}
             alt={result.studentName}
-            crossOrigin="anonymous"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         </div>
@@ -430,9 +493,9 @@ function MarksheetContent({
       <table
         style={{
           position: 'absolute',
-          left: '48px',
-          top: '878px',
-          width: '927px',
+          left: '53px',
+          top: '915px',
+          width: '1024px',
           tableLayout: 'fixed',
           borderCollapse: 'collapse',
           fontFamily: ARIAL,
@@ -453,7 +516,7 @@ function MarksheetContent({
         </colgroup>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} style={{ height: '47.5px' }}>
+            <tr key={i} style={{ height: '49.5px' }}>
               <td
                 style={{
                   textAlign: 'center',
@@ -463,15 +526,25 @@ function MarksheetContent({
               ></td>
               <td
                 style={{
-                  textAlign: 'left',
+                  textAlign: 'center',
                   verticalAlign: 'middle',
                   padding: '0 4px',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  lineHeight: 1.1,
+                  height: '49.5px',
                 }}
               >
-                {r.name}
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: '100%',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {r.name}
+                </div>
               </td>
               <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '0 2px' }}>
                 {r.maxMarks}
@@ -488,7 +561,7 @@ function MarksheetContent({
               <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '0 2px' }}>
                 {r.practicalObt}
               </td>
-              <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '0 2px' }}>
+              <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '0 2px', position: 'relative', left: '-18px' }}>
                 {r.subjectTotal}
               </td>
             </tr>
@@ -516,9 +589,9 @@ function MarksheetContent({
       <table
         style={{
           position: 'absolute',
-          left: '48px',
-          top: '1259px',
-          width: '927px',
+          left: '53px',
+          top: '1311px',
+          width: '1024px',
           tableLayout: 'fixed',
           borderCollapse: 'collapse',
           fontFamily: ARIAL,
@@ -538,21 +611,25 @@ function MarksheetContent({
           <col style={{ width: '9.385%' }} />
         </colgroup>
         <tbody>
-          <tr style={{ height: '47px' }}>
-            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}></td>
-            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}></td>
-            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+          <tr style={{ height: '49px' }}>
+            <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px' }}></td>
+            <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px' }}></td>
+            <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px' }}>
               {result.maxTotal ?? calcTotalMax}
             </td>
-            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+            <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px' }}>
               {calcTotalPassing}
             </td>
-            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
-              {result.total ?? calcTotalObt}
+            <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px' }}>
+              {rows.reduce((s, r) => s + r.theoryObt, 0)}
             </td>
-            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>0</td>
-            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>0</td>
-            <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
+            <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px' }}>
+              {rows.reduce((s, r) => s + r.practicalMax, 0)}
+            </td>
+            <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px' }}>
+              {rows.reduce((s, r) => s + r.practicalObt, 0)}
+            </td>
+            <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px', position: 'relative', left: '-18px' }}>
               {result.total ?? calcTotalObt}
             </td>
           </tr>
@@ -560,13 +637,13 @@ function MarksheetContent({
       </table>
 
       {/* QR Code Overlay (bottom right signature area) */}
-      {qrCodeUrl && (
+      {/* {qrCodeUrl && (
         <div
           style={{
             position: 'absolute',
-            left: '480px',
-            top: '1399px',
-            width: '77px',
+            left: '530px',
+            top: '1457px',
+            width: '85px',
             aspectRatio: '1',
             background: '#fff',
             padding: '1px',
@@ -575,7 +652,7 @@ function MarksheetContent({
         >
           <img src={qrCodeUrl} alt="QR Code" style={{ width: '100%', height: '100%' }} />
         </div>
-      )}
+      )} */}
     </div>
   )
 }

@@ -40,6 +40,10 @@ class ResultController extends Controller
             'subjects.*.marks' => ['required', 'integer', 'min:0'],
             'subjects.*.maxMarks' => ['required', 'integer', 'min:1'],
             'subjects.*.passingMarks' => ['required', 'integer', 'min:0'],
+            'subjects.*.theoryMaxMarks' => ['nullable', 'integer', 'min:0'],
+            'subjects.*.theoryMarks' => ['nullable', 'integer', 'min:0'],
+            'subjects.*.practicalMaxMarks' => ['nullable', 'integer', 'min:0'],
+            'subjects.*.practicalMarks' => ['nullable', 'integer', 'min:0'],
             'total' => ['nullable', 'integer'],
             'maxTotal' => ['nullable', 'integer'],
             'percentage' => ['nullable', 'numeric'],
@@ -74,6 +78,10 @@ class ResultController extends Controller
                 'max_marks' => $subject['maxMarks'],
                 'obtained_marks' => $subject['marks'],
                 'passing_marks' => $subject['passingMarks'] ?? 33,
+                'theory_max_marks' => $subject['theoryMaxMarks'] ?? null,
+                'theory_obtained_marks' => $subject['theoryMarks'] ?? null,
+                'practical_max_marks' => $subject['practicalMaxMarks'] ?? null,
+                'practical_obtained_marks' => $subject['practicalMarks'] ?? null,
             ]);
         }
 
@@ -140,6 +148,10 @@ class ResultController extends Controller
                 'marks' => $m->obtained_marks,
                 'maxMarks' => $m->max_marks,
                 'passingMarks' => $m->passing_marks,
+                'theoryMaxMarks' => $m->theory_max_marks,
+                'theoryMarks' => $m->theory_obtained_marks,
+                'practicalMaxMarks' => $m->practical_max_marks,
+                'practicalMarks' => $m->practical_obtained_marks,
             ])->values(),
             'total' => $result->total_obtained_marks,
             'maxTotal' => $result->total_max_marks,

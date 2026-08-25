@@ -49,6 +49,9 @@ class AdmissionController extends Controller
             'courseId' => ['required', 'integer', 'exists:courses,id'],
             'batch' => ['nullable', 'string', 'max:255'],
             'admissionDate' => ['nullable', 'date'],
+            'photo' => ['nullable', 'string'],
+            'aadhaarCard' => ['nullable', 'string'],
+            'matricDmc' => ['nullable', 'string'],
         ]);
 
         $admission = AdmissionRequest::create([
@@ -64,6 +67,9 @@ class AdmissionController extends Controller
             'batch' => $validated['batch'] ?? null,
             'applied_date' => $validated['admissionDate'] ?? now()->toDateString(),
             'status' => 'Pending',
+            'photo' => $validated['photo'] ?? null,
+            'aadhaar_card' => $validated['aadhaarCard'] ?? null,
+            'matric_dmc' => $validated['matricDmc'] ?? null,
         ]);
 
         return response()->json($this->map($admission->load('course')), 201);
@@ -124,6 +130,9 @@ class AdmissionController extends Controller
             'status' => 'Active',
             'roll_number' => $code . $seq,
             'registration_number' => 'REG' . now()->year . $seq,
+            'photo' => $admission->photo,
+            'aadhaar_card' => $admission->aadhaar_card,
+            'matric_dmc' => $admission->matric_dmc,
         ]);
     }
 
@@ -144,6 +153,9 @@ class AdmissionController extends Controller
             'batch' => $admission->batch,
             'appliedDate' => $admission->applied_date?->toDateString(),
             'status' => $admission->status,
+            'photo' => $admission->photo ? url('storage/' . ltrim($admission->photo, '/')) : null,
+            'aadhaarCard' => $admission->aadhaar_card ? url('storage/' . ltrim($admission->aadhaar_card, '/')) : null,
+            'matricDmc' => $admission->matric_dmc ? url('storage/' . ltrim($admission->matric_dmc, '/')) : null,
         ];
     }
 }

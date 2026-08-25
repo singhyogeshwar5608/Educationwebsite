@@ -9,7 +9,8 @@ class AdmissionRequest extends Model
 {
     protected $fillable = [
         'student_name', 'father_name', 'mother_name', 'date_of_birth', 'gender',
-        'mobile', 'email', 'address', 'batch', 'status', 'applied_date', 'course_id',
+        'mobile', 'email', 'address', 'photo', 'aadhaar_card', 'matric_dmc',
+        'batch', 'status', 'applied_date', 'course_id',
     ];
 
     protected $casts = [

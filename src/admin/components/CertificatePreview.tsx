@@ -7,6 +7,37 @@ import { settingsService } from '@/services/gallery.service'
 import { coursesService } from '@/services/courses.service'
 import { CERT_BG_BASE64 } from '@/admin/components/certBgBase64'
 
+// Load an image for canvas use. Hostinger's CDN strips Access-Control-Allow-*
+// headers from any URL ending in an image extension, which taints the canvas.
+// So we fetch a base64 JSON payload from /api/storage-base64 (extension-free
+// URL — treated as dynamic by the CDN, CORS survives) and draw a data: URL,
+// which is always canvas-safe.
+function loadImageCorsFallback(src: string): Promise<HTMLImageElement> {
+  const load = (url: string) =>
+    new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = () => reject(new Error('Failed to load image'))
+      img.src = url
+    })
+
+  // https://host/storage/students/x.jpg -> https://host/api/storage-base64?path=students/x.jpg
+  const m = src.match(/\/storage\/(.+)$/)
+  const origin = new URL(src, window.location.href).origin
+  const proxySrc = `${origin}/api/storage-base64?path=${encodeURIComponent(m ? m[1] : '')}`
+
+  return fetch(proxySrc)
+    .then((r) => {
+      if (!r.ok) throw new Error('proxy failed')
+      return r.json()
+    })
+    .then((json) => {
+      if (!json?.data) throw new Error('no data')
+      return load(json.data as string)
+    })
+    .catch(() => load(src))
+}
+
 // Normalized certificate data. Both a `Result` (results page) and a `Certificate`
 // (certificates page) can be mapped to this shape.
 export interface CertificateData {
@@ -30,13 +61,38 @@ interface CertificatePreviewProps {
   onClose: () => void
 }
 
+// Base host for storage files (VITE_API_URL without /api suffix)
+const STORAGE_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000/api').replace(/\/api\/?$/, '')
+
 const ARIAL = "'Times New Roman', Georgia, serif"
 
-// The background certificate.jpeg is exactly 1536x1024 (landscape). The capture
+/** Format any date string to Indian standard DD-MM-YYYY */
+function fmtDate(v?: string | null): string {
+  if (!v) return "";
+  if (/^\d{2}-\d{2}-\d{4}$/.test(v)) return v;
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return v;
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}-${mm}-${yyyy}`;
+}
+
+// The background certificate.jpeg is exactly 1600x1066 (landscape). The capture
 // element is rendered at this fixed size so the overlay text sits 1:1 on the
 // design.
-const DESIGN_W = 1536
-const DESIGN_H = 1024
+const DESIGN_W = 1600
+const DESIGN_H = 1066
+
+// Scale factor from old design (1536x1024) to new (1600x1066).
+const SCALE_X = DESIGN_W / 1536
+const SCALE_Y = DESIGN_H / 1024
+
+function sX(x: number): number { return Math.round(x * SCALE_X) }
+function sY(y: number): number { return Math.round(y * SCALE_Y) }
+function sW(w: number): number { return Math.round(w * SCALE_X) }
+function sH(h: number): number { return Math.round(h * SCALE_Y) }
+function sF(f: number): number { return Math.round(f * SCALE_X) }
 
 function shortYear(fullBatchOrDate: string | undefined | null): string {
   if (!fullBatchOrDate) return ''
@@ -58,10 +114,12 @@ interface CertField {
   x: number
   y: number
   w: number
+  h?: number
   fontSize: number
   align: 'left' | 'center' | 'right'
   bold: boolean
   text: string
+  photoUrl?: string
 }
 
 // Single source of truth for every field's position + value. Used by BOTH the
@@ -73,19 +131,33 @@ function buildCertFields(
   course: any,
   instituteName: string,
 ): CertField[] {
+  // Build absolute photo URL from whatever format the API returns
+  const rawPhoto = student?.photo
+  const photoUrl = rawPhoto
+    ? rawPhoto.startsWith('http')
+      ? rawPhoto
+      : rawPhoto.startsWith('/storage/')
+        ? `${STORAGE_BASE}${rawPhoto}`
+        : rawPhoto.startsWith('storage/')
+          ? `${STORAGE_BASE}/${rawPhoto}`
+          : `${STORAGE_BASE}/storage/${rawPhoto}`
+    : null
+
   return [
-    { x: 170, y: 40, w: 420, fontSize: 24, align: 'left', bold: true, text: data.certificateNo || data.rollNo || '' },
-    { x: 1140, y: 40, w: 250, fontSize: 24, align: 'right', bold: true, text: data.enrollmentNo || student?.registrationNo || '' },
-    { x: 500, y: 507, w: 560, fontSize: 32, align: 'center', bold: true, text: data.studentName || '' },
-    { x: 350, y: 552, w: 560, fontSize: 30, align: 'center', bold: true, text: student?.fatherName || '' },
-    { x: 455, y: 598, w: 250, fontSize: 28, align: 'right', bold: true, text: data.enrollmentNo || student?.registrationNo || '' },
-    { x: 450, y: 682, w: 600, fontSize: 32, align: 'center', bold: true, text: data.course || '' },
-    { x: 260, y: 739, w: 290, fontSize: 28, align: 'center', bold: true, text: data.duration || course?.duration || student?.duration || '' },
-    { x: 600, y: 739, w: 290, fontSize: 28, align: 'center', bold: true, text: data.session || student?.batch || shortYear(data.issueDate || data.publishedDate) },
-    { x: 1020, y: 739, w: 280, fontSize: 28, align: 'right', bold: true, text: data.percentage != null ? `${data.percentage}%` : '' },
-    { x: 1000, y: 739, w: 240, fontSize: 28, align: 'left', bold: true, text: data.grade || '' },
-    { x: 310, y: 891, w: 220, fontSize: 24, align: 'center', bold: true, text: data.issueDate || data.publishedDate || '' },
-    { x: 90, y: 960, w: 500, fontSize: 16, align: 'left', bold: false, text: instituteName },
+    { x: sX(170), y: sY(40), w: sW(420), fontSize: sF(24), align: 'left', bold: true, text: data.certificateNo || data.rollNo || '' },
+    { x: sX(1140), y: sY(40), w: sW(250), fontSize: sF(24), align: 'right', bold: true, text: data.enrollmentNo || student?.registrationNo || '' },
+    { x: sX(500), y: sY(507), w: sW(560), fontSize: sF(32), align: 'center', bold: true, text: data.studentName || '' },
+    { x: sX(350), y: sY(552), w: sW(560), fontSize: sF(30), align: 'center', bold: true, text: student?.fatherName || '' },
+    { x: sX(455), y: sY(598), w: sW(250), fontSize: sF(28), align: 'right', bold: true, text: data.enrollmentNo || student?.registrationNo || '' },
+    { x: sX(450), y: sY(682), w: sW(600), fontSize: sF(32), align: 'center', bold: true, text: data.course || '' },
+    { x: sX(260), y: sY(739), w: sW(290), fontSize: sF(28), align: 'center', bold: true, text: data.duration || course?.duration || student?.duration || '' },
+    { x: sX(600), y: sY(739), w: sW(290), fontSize: sF(28), align: 'center', bold: true, text: data.session || student?.batch || shortYear(data.issueDate || data.publishedDate) },
+    { x: sX(1020), y: sY(739), w: sW(280), fontSize: sF(28), align: 'right', bold: true, text: data.percentage != null ? `${data.percentage}%` : '' },
+    { x: sX(1000), y: sY(739), w: sW(240), fontSize: sF(28), align: 'left', bold: true, text: data.grade || '' },
+    { x: sX(310), y: sY(891), w: sW(220), fontSize: sF(24), align: 'center', bold: true, text: fmtDate(data.issueDate || data.publishedDate) },
+    { x: sX(90), y: sY(960), w: sW(500), fontSize: sF(16), align: 'left', bold: false, text: instituteName },
+    // Student photo (positioned like marksheet: right side, near top)
+    ...(photoUrl ? [{ x: sX(1280), y: sY(298), w: sW(180), h: sH(235), fontSize: 0, align: 'left', bold: false, text: '__PHOTO__', photoUrl } as CertField & { photoUrl: string }] : []),
   ]
 }
 
@@ -116,6 +188,11 @@ async function renderCertificateToCanvas(
   ctx.textBaseline = 'top'
   for (const f of buildCertFields(data, student, course, instituteName)) {
     if (!f.text) continue
+    if (f.text === '__PHOTO__' && f.photoUrl) {
+      const img = await loadImageCorsFallback(f.photoUrl)
+      ctx.drawImage(img, f.x, f.y, f.w, f.h ?? (f.w * img.height) / img.width)
+      continue
+    }
     ctx.font = `${f.bold ? '600' : '400'} ${f.fontSize}px 'Times New Roman', Georgia, serif`
     ctx.textAlign = f.align
     let drawX = f.x
@@ -213,14 +290,31 @@ function CertificateContent({
         backgroundPosition: 'center',
       }}
     >
-      {fields.map((f, i) => (
-        <span
-          key={i}
-          style={abs(f.x, f.y, f.w, f.fontSize, f.align, f.bold)}
-        >
-          {f.text}
-        </span>
-      ))}
+      {fields.map((f, i) => {
+        if (f.text === '__PHOTO__' && f.photoUrl) {
+          return (
+            <img
+              key={i}
+              src={f.photoUrl}
+              alt="Student"
+              style={{
+                position: 'absolute',
+                left: `${f.x}px`,
+                top: `${f.y}px`,
+                width: `${f.w}px`,
+                height: f.h ? `${f.h}px` : 'auto',
+                objectFit: 'cover',
+                border: '1px solid #ccc',
+              }}
+            />
+          )
+        }
+        return (
+          <span key={i} style={abs(f.x, f.y, f.w, f.fontSize, f.align, f.bold)}>
+            {f.text}
+          </span>
+        )
+      })}
     </div>
   )
 }

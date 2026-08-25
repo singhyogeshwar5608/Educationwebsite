@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Search, Eye, Pencil, Trash2, Users, GraduationCap, UserCheck, Loader2, AlertCircle, User, BookOpen, Clock, Mail, FileText, Award, ChevronDown, Layers, Check } from 'lucide-react'
+import { Search, Eye, Pencil, Trash2, Users, GraduationCap, UserCheck, Loader2, AlertCircle, User, BookOpen, Clock, Mail, FileText, Award, ChevronDown, Layers, Check, Camera, UploadCloud, X } from 'lucide-react'
 import { getCourseDetails, getCourses } from '@/admin/services/api'
 import type { Student, Course } from '@/admin/services/api'
 import { studentsService } from '@/services/students.service'
+import { uploadService } from '@/services/gallery.service'
 import { useToast } from '@/admin/components/Toast'
 import ConfirmDialog from '@/admin/components/ConfirmDialog'
 import Card from '@/admin/components/ui/Card'
@@ -178,13 +179,28 @@ function Students() {
   const [submitting, setSubmitting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [lightbox, setLightbox] = useState<string | null>(null)
 
   const emptyForm = {
     name: '', fatherName: '', motherName: '', dob: '', gender: '' as '' | 'Male' | 'Female',
-    mobile: '', email: '', address: '', courseId: '', batch: '', admissionDate: '',
+    mobile: '', email: '', address: '', courseId: '', batch: '', admissionDate: '', photo: '', aadhaarCard: '', matricDmc: '',
   }
   const [form, setForm] = useState(emptyForm)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string>('')
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+
+  const [aadhaarFile, setAadhaarFile] = useState<File | null>(null)
+  const [aadhaarPreview, setAadhaarPreview] = useState<string>('')
+  const [aadhaarUploading, setAadhaarUploading] = useState(false)
+  const aadhaarInputRef = useRef<HTMLInputElement>(null)
+
+  const [dmcFile, setDmcFile] = useState<File | null>(null)
+  const [dmcPreview, setDmcPreview] = useState<string>('')
+  const [dmcUploading, setDmcUploading] = useState(false)
+  const dmcInputRef = useRef<HTMLInputElement>(null)
 
   const REQUIRED_FIELDS: { key: keyof typeof emptyForm; label: string }[] = [
     { key: 'name', label: 'Student Name' },
@@ -264,9 +280,97 @@ function Students() {
       name: s.name, fatherName: s.fatherName || '', motherName: s.motherName || '', dob: s.dob || '',
       gender: s.gender || '', mobile: s.mobile || '', email: s.email || '', address: s.address || '',
       courseId: s.courseId || '', batch: s.batch || '', admissionDate: s.admissionDate || '',
+      photo: s.photo || '', aadhaarCard: s.aadhaarCard || '', matricDmc: s.matricDmc || '',
     })
+    setPhotoFile(null)
+    setPhotoPreview(s.photo || '')
+    setAadhaarFile(null)
+    setAadhaarPreview(s.aadhaarCard || '')
+    setDmcFile(null)
+    setDmcPreview(s.matricDmc || '')
     setFormErrors({})
     setShowAddModal(true)
+  }
+
+  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast('Please select an image file', 'error')
+      return
+    }
+    setPhotoFile(file)
+    const reader = new FileReader()
+    reader.onload = () => setPhotoPreview(reader.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  async function handlePhotoUpload(): Promise<string> {
+    if (!photoFile) return form.photo || ''
+    setPhotoUploading(true)
+    try {
+      const res = await uploadService.upload(photoFile, 'students')
+      const path = res?.path || ''
+      setForm((p) => ({ ...p, photo: path }))
+      setPhotoFile(null)
+      return path
+    } finally {
+      setPhotoUploading(false)
+    }
+  }
+
+  async function handleAadhaarSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast('Please select an image file', 'error')
+      return
+    }
+    setAadhaarFile(file)
+    const reader = new FileReader()
+    reader.onload = () => setAadhaarPreview(reader.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  async function handleAadhaarUpload(): Promise<string> {
+    if (!aadhaarFile) return form.aadhaarCard || ''
+    setAadhaarUploading(true)
+    try {
+      const res = await uploadService.upload(aadhaarFile, 'students')
+      const path = res?.path || ''
+      setForm((p) => ({ ...p, aadhaarCard: path }))
+      setAadhaarFile(null)
+      return path
+    } finally {
+      setAadhaarUploading(false)
+    }
+  }
+
+  async function handleDmcSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast('Please select an image file', 'error')
+      return
+    }
+    setDmcFile(file)
+    const reader = new FileReader()
+    reader.onload = () => setDmcPreview(reader.result as string)
+    reader.readAsDataURL(file)
+  }
+
+  async function handleDmcUpload(): Promise<string> {
+    if (!dmcFile) return form.matricDmc || ''
+    setDmcUploading(true)
+    try {
+      const res = await uploadService.upload(dmcFile, 'students')
+      const path = res?.path || ''
+      setForm((p) => ({ ...p, matricDmc: path }))
+      setDmcFile(null)
+      return path
+    } finally {
+      setDmcUploading(false)
+    }
   }
 
   async function handleSubmitStudent() {
@@ -281,11 +385,22 @@ function Students() {
 
     setSubmitting(true)
     try {
+      // Upload new files first (if any), then save student with the paths.
+      const payload = { ...form }
+      if (photoFile) {
+        payload.photo = await handlePhotoUpload()
+      }
+      if (aadhaarFile) {
+        payload.aadhaarCard = await handleAadhaarUpload()
+      }
+      if (dmcFile) {
+        payload.matricDmc = await handleDmcUpload()
+      }
       if (editingStudent) {
-        await studentsService.update(Number(editingStudent.id), form)
+        await studentsService.update(Number(editingStudent.id), payload)
         toast('Student updated successfully')
       } else {
-        await studentsService.create(form)
+        await studentsService.create(payload)
         toast('Student added successfully')
       }
       queryClient.invalidateQueries({ queryKey: ['students'] })
@@ -293,6 +408,12 @@ function Students() {
       setEditingStudent(null)
       setForm(emptyForm)
       setSelectedCourseDetails(null)
+      setPhotoFile(null)
+      setPhotoPreview('')
+      setAadhaarFile(null)
+      setAadhaarPreview('')
+      setDmcFile(null)
+      setDmcPreview('')
     } catch (err: any) {
       toast(getErrorMessage(err, 'Failed to save student'), 'error')
     } finally {
@@ -543,6 +664,153 @@ function Students() {
                 <FieldError message={formErrors.mobile} />
               </div>
             </div>
+
+            {/* Student Photo */}
+            <div className="mt-4 flex items-center gap-4">
+              <div className="shrink-0">
+                {photoPreview ? (
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-navy/20 shadow-sm">
+                    <img src={photoPreview} alt="Student preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { setPhotoPreview(''); setPhotoFile(null); setForm((p) => ({ ...p, photo: '' })) }}
+                      className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600"
+                      aria-label="Remove photo"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center text-gray-400">
+                    <Camera className="w-6 h-6" />
+                    <span className="text-[8px] mt-0.5">No Photo</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <label className={labelCls}>Student Photo <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePhotoSelect}
+                  className="hidden"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => photoInputRef.current?.click()}
+                    disabled={photoUploading}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-navy/20 text-navy text-xs font-semibold hover:bg-navy/5 transition-colors disabled:opacity-50"
+                  >
+                    {photoUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
+                    {photoUploading ? 'Uploading...' : photoFile ? 'Change Photo' : 'Upload Photo'}
+                  </button>
+                  {photoFile && (
+                    <span className="text-[10px] text-gray-500 truncate">{photoFile.name}</span>
+                  )}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">JPG/PNG up to 5MB. This photo appears on the marksheet and certificate.</p>
+              </div>
+            </div>
+
+            {/* Aadhaar Card */}
+            <div className="mt-4 flex items-center gap-4">
+              <div className="shrink-0">
+                {aadhaarPreview ? (
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-navy/20 shadow-sm">
+                    <img src={aadhaarPreview} alt="Aadhaar preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { setAadhaarPreview(''); setAadhaarFile(null); setForm((p) => ({ ...p, aadhaarCard: '' })) }}
+                      className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600"
+                      aria-label="Remove aadhaar"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center text-gray-400">
+                    <Camera className="w-6 h-6" />
+                    <span className="text-[8px] mt-0.5">No Card</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <label className={labelCls}>Aadhaar Card <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input
+                  ref={aadhaarInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAadhaarSelect}
+                  className="hidden"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => aadhaarInputRef.current?.click()}
+                    disabled={aadhaarUploading}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-navy/20 text-navy text-xs font-semibold hover:bg-navy/5 transition-colors disabled:opacity-50"
+                  >
+                    {aadhaarUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
+                    {aadhaarUploading ? 'Uploading...' : aadhaarFile ? 'Change Card' : 'Upload Card'}
+                  </button>
+                  {aadhaarFile && (
+                    <span className="text-[10px] text-gray-500 truncate">{aadhaarFile.name}</span>
+                  )}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">JPG/PNG up to 5MB. Student's Aadhaar card image.</p>
+              </div>
+            </div>
+
+            {/* Matric / DMC */}
+            <div className="mt-4 flex items-center gap-4">
+              <div className="shrink-0">
+                {dmcPreview ? (
+                  <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-navy/20 shadow-sm">
+                    <img src={dmcPreview} alt="DMC preview" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { setDmcPreview(''); setDmcFile(null); setForm((p) => ({ ...p, matricDmc: '' })) }}
+                      className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center hover:bg-red-600"
+                      aria-label="Remove DMC"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center text-gray-400">
+                    <Camera className="w-6 h-6" />
+                    <span className="text-[8px] mt-0.5">No DMC</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <label className={labelCls}>Matric / DMC <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input
+                  ref={dmcInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleDmcSelect}
+                  className="hidden"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => dmcInputRef.current?.click()}
+                    disabled={dmcUploading}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-navy/20 text-navy text-xs font-semibold hover:bg-navy/5 transition-colors disabled:opacity-50"
+                  >
+                    {dmcUploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
+                    {dmcUploading ? 'Uploading...' : dmcFile ? 'Change DMC' : 'Upload DMC'}
+                  </button>
+                  {dmcFile && (
+                    <span className="text-[10px] text-gray-500 truncate">{dmcFile.name}</span>
+                  )}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1">JPG/PNG up to 5MB. Matriculation / DMC marksheet image.</p>
+              </div>
+            </div>
           </div>
 
           {/* Contact & Course */}
@@ -663,34 +931,6 @@ function Students() {
               <div className="ml-auto shrink-0">{getStatusBadge(viewStudent.status)}</div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => { openEditModal(viewStudent); setViewStudent(null) }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-navy hover:bg-navy-light text-white transition-colors"
-              >
-                <Pencil className="w-3.5 h-3.5" /> Edit
-              </button>
-              <button
-                onClick={() => { setShowDeleteConfirm(viewStudent.id); setViewStudent(null) }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-500 hover:bg-red-600 text-white transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" /> Delete
-              </button>
-              <button
-                onClick={() => navigate(`/admin/students/${viewStudent.id}`)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-green hover:bg-green/90 text-white transition-colors"
-              >
-                <FileText className="w-3.5 h-3.5" /> View Result
-              </button>
-              <button
-                onClick={() => navigate(`/admin/students/${viewStudent.id}`)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gold hover:bg-[#FFD54F] text-navy transition-colors"
-              >
-                <Award className="w-3.5 h-3.5" /> View Certificate
-              </button>
-            </div>
-
             {/* Personal Information */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-5">
               <SectionHeader icon={User} color="bg-navy/10 text-navy" title="Personal Information" hint="Student's personal details" />
@@ -756,8 +996,51 @@ function Students() {
                 </div>
               </div>
             </div>
+
+            {/* Documents */}
+            {(viewStudent.photo || viewStudent.aadhaarCard || viewStudent.matricDmc) && (
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 sm:p-5">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <span className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-purple-100 text-purple-600">
+                    <Eye className="w-4 h-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-bold text-text-dark">Documents</p>
+                    <p className="text-[11px] text-gray-400">Uploaded student documents</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {viewStudent.photo && (
+                    <button type="button" onClick={() => setLightbox(viewStudent.photo!)} className="group relative w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-200 hover:border-navy transition-colors shadow-sm">
+                      <img src={viewStudent.photo} alt="Student Photo" className="w-full h-full object-cover" />
+                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-medium text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">Photo</span>
+                    </button>
+                  )}
+                  {viewStudent.aadhaarCard && (
+                    <button type="button" onClick={() => setLightbox(viewStudent.aadhaarCard!)} className="group relative w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-200 hover:border-navy transition-colors shadow-sm">
+                      <img src={viewStudent.aadhaarCard} alt="Aadhaar Card" className="w-full h-full object-cover" />
+                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-medium text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">Aadhaar</span>
+                    </button>
+                  )}
+                  {viewStudent.matricDmc && (
+                    <button type="button" onClick={() => setLightbox(viewStudent.matricDmc!)} className="group relative w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-200 hover:border-navy transition-colors shadow-sm">
+                      <img src={viewStudent.matricDmc} alt="Matric DMC" className="w-full h-full object-cover" />
+                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] font-medium text-center py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">DMC</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </Modal>
+      )}
+
+      {/* Lightbox */}
+      {lightbox && (
+        <div className="fixed inset-0 z-[9999] bg-black/80 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
+          <button onClick={() => setLightbox(null)} className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-colors text-xl font-bold">&times;</button>
+          <img src={lightbox} alt="Full view" className="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain" onClick={(e) => e.stopPropagation()} />
+        </div>
       )}
     </div>
   )

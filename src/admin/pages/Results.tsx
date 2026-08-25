@@ -15,7 +15,7 @@ import ConfirmDialog from '@/admin/components/ConfirmDialog'
 import Panel from '@/admin/components/ui/Panel'
 import Card from '@/admin/components/ui/Card'
 import ExcelSpreadsheet from '@/admin/components/ExcelSpreadsheet'
-import ResultPreview from '@/admin/components/ResultPreview'
+import ResultPreview, { downloadResultPdf } from '@/admin/components/ResultPreview'
 
 const ITEMS_PER_PAGE = 8
 
@@ -70,7 +70,7 @@ function Results() {
   const [selectedStudent, setSelectedStudent] = useState<AvailableStudent | null>(null)
   const [studentSearch, setStudentSearch] = useState('')
   const [courseFilter, setCourseFilter] = useState('')
-  const [subjectMarks, setSubjectMarks] = useState<Record<string, number>>({})
+  const [subjectMarks, setSubjectMarks] = useState<Record<string, { theory: number; practical: number; practicalMax: number }>>({})
   const [submitting, setSubmitting] = useState(false)
 
   const queryClient = useQueryClient()
@@ -126,18 +126,29 @@ function Results() {
 
   const calculations = useMemo(() => {
     if (!courseSubjects.length) return null
-    const entries = courseSubjects.map((sub) => ({ name: sub.name, marks: subjectMarks[sub.id] ?? 0, maxMarks: sub.maxMarks, passingMarks: sub.passingMarks }))
-    const total = entries.reduce((s, e) => s + e.marks, 0); const max = entries.reduce((s, e) => s + e.maxMarks, 0)
+    const entries = courseSubjects.map((sub) => {
+      const m = subjectMarks[sub.id] ?? { theory: 0, practical: 0, practicalMax: 0 }
+      const theoryObt = m.theory
+      const practicalObt = m.practical
+      const practicalMax = m.practicalMax
+      const theoryMax = sub.maxMarks - practicalMax
+      const subjectTotal = theoryObt + practicalObt
+      return { name: sub.name, marks: subjectTotal, maxMarks: sub.maxMarks, passingMarks: sub.passingMarks, theoryMax, theoryObt, practicalMax, practicalObt, subjectTotal }
+    })
+    const total = entries.reduce((s, e) => s + e.subjectTotal, 0); const max = entries.reduce((s, e) => s + e.maxMarks, 0)
     const pct = max > 0 ? (total / max) * 100 : 0; const { grade } = calculateGrade(pct)
-    const subRes = entries.map((e) => ({ ...e, passed: e.marks >= e.passingMarks }))
+    const subRes = entries.map((e) => ({ ...e, passed: e.subjectTotal >= e.passingMarks }))
     const failedCount = subRes.filter((s) => !s.passed).length
     const pass = failedCount < 3
     return { total, maxTotal: max, percentage: pct, grade, pass, failedCount, subjectResults: subRes, marksEntries: entries }
   }, [courseSubjects, subjectMarks])
 
-  function handleMarksChange(id: string, value: string, maxM: number) {
+  function handleMarksChange(id: string, field: 'theory' | 'practical' | 'practicalMax', value: string, maxM: number) {
     let n = parseInt(value, 10); if (isNaN(n)) n = 0; if (n < 0) n = 0; if (n > maxM) n = maxM
-    setSubjectMarks((p) => ({ ...p, [id]: n }))
+    setSubjectMarks((p) => {
+      const prev = p[id] ?? { theory: 0, practical: 0, practicalMax: 0 }
+      return { ...p, [id]: { ...prev, [field]: n } }
+    })
   }
 
   function getErrorMessage(err: any, fallback: string): string {
@@ -155,7 +166,9 @@ function Results() {
     const payload = {
       studentId: Number(selectedStudent.id),
       subjects: calculations.marksEntries.map((e) => ({
-        name: e.name, marks: e.marks, maxMarks: e.maxMarks, passingMarks: e.passingMarks,
+        name: e.name, marks: e.subjectTotal, maxMarks: e.maxMarks, passingMarks: e.passingMarks,
+        theoryMaxMarks: e.theoryMax, theoryMarks: e.theoryObt,
+        practicalMaxMarks: e.practicalMax, practicalMarks: e.practicalObt,
       })),
       total: calculations.total,
       maxTotal: calculations.maxTotal,
@@ -194,6 +207,15 @@ function Results() {
   }
 
   function handleGenerateClick() { setSelectedStudent(null); setStudentSearch(''); setSubjectMarks({}); setGenStep(1); setCourseFilter(''); setActiveTab('generate') }
+
+  async function handleDownloadResult(r: Result) {
+    try {
+      await downloadResultPdf(r)
+    } catch (err) {
+      console.error('Failed to download result:', err)
+      toast('Failed to download result', 'error')
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4 animate-fade-in">
@@ -255,7 +277,7 @@ function Results() {
                       render: (r) => (
                         <div className="flex items-center justify-center gap-1">
                           <button onClick={() => setViewResult(r)} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="View Result"><Eye className="w-3.5 h-3.5" /></button>
-                          <button className="p-1 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="Download"><Download className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => handleDownloadResult(r)} className="p-1 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="Download"><Download className="w-3.5 h-3.5" /></button>
                           <button onClick={() => setDeleteConfirm(r.id)} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       ),
@@ -333,18 +355,33 @@ function Results() {
                 ) : (
                 <div className="overflow-x-auto border border-gray-300">
                   <table className="w-full border-collapse">
-                    <thead><tr className="bg-[#0078D7] text-white text-[11px]"><th className="px-3 py-1.5 text-left font-bold border-r border-[#005A9E]">#</th><th className="px-3 py-1.5 text-left font-bold border-r border-[#005A9E]">Subject</th><th className="px-3 py-1.5 text-center font-bold border-r border-[#005A9E]">Max</th><th className="px-3 py-1.5 text-center font-bold border-r border-[#005A9E]">Pass</th><th className="px-3 py-1.5 text-center font-bold border-r border-[#005A9E]">Marks</th><th className="px-3 py-1.5 text-center font-bold">Status</th></tr></thead>
+                    <thead><tr className="bg-[#0078D7] text-white text-[11px]">
+                      <th className="px-2 py-1.5 text-left font-bold border-r border-[#005A9E]">#</th>
+                      <th className="px-2 py-1.5 text-left font-bold border-r border-[#005A9E]">Subject</th>
+                      <th className="px-2 py-1.5 text-center font-bold border-r border-[#005A9E]">Max</th>
+                      <th className="px-2 py-1.5 text-center font-bold border-r border-[#005A9E]">Pass</th>
+                      <th className="px-2 py-1.5 text-center font-bold border-r border-[#005A9E]">Prac Max</th>
+                      <th className="px-2 py-1.5 text-center font-bold border-r border-[#005A9E]">Theory</th>
+                      <th className="px-2 py-1.5 text-center font-bold border-r border-[#005A9E]">Practical</th>
+                      <th className="px-2 py-1.5 text-center font-bold border-r border-[#005A9E]">Total</th>
+                      <th className="px-2 py-1.5 text-center font-bold">Status</th>
+                    </tr></thead>
                     <tbody>
                       {courseSubjects.map((sub, idx) => {
-                        const m = subjectMarks[sub.id] ?? 0; const has = sub.id in subjectMarks
+                        const m = subjectMarks[sub.id] ?? { theory: 0, practical: 0, practicalMax: 0 }
+                        const has = sub.id in subjectMarks
+                        const total = m.theory + m.practical
                         return (
                           <tr key={sub.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#F5F5F5]'}>
-                            <td className="px-3 py-1.5 text-[11px] text-gray-500 border-b border-gray-300 border-r border-gray-300">{idx + 1}</td>
-                            <td className="px-3 py-1.5 text-[11px] font-semibold text-[#222222] border-b border-gray-300 border-r border-gray-300">{sub.name}</td>
-                            <td className="px-3 py-1.5 text-[11px] text-center text-gray-600 border-b border-gray-300 border-r border-gray-300">{sub.maxMarks}</td>
-                            <td className="px-3 py-1.5 text-[11px] text-center text-gray-600 border-b border-gray-300 border-r border-gray-300">{sub.passingMarks}</td>
-                            <td className="px-3 py-1.5 text-center border-b border-gray-300 border-r border-gray-300"><input type="number" min={0} max={sub.maxMarks} className="w-16 text-center text-[11px] border border-gray-300 px-1 py-0.5" placeholder="0" value={has ? m : ''} onChange={(e) => handleMarksChange(sub.id, e.target.value, sub.maxMarks)} /></td>
-                            <td className="px-3 py-1.5 text-center border-b border-gray-300">{has ? (m >= sub.passingMarks ? <span className="text-[10px] text-[#2E7D32] font-medium">Pass</span> : <span className="text-[10px] text-[#C62828] font-medium">Fail</span>) : <span className="text-[10px] text-gray-300">—</span>}</td>
+                            <td className="px-2 py-1.5 text-[11px] text-gray-500 border-b border-gray-300 border-r border-gray-300">{idx + 1}</td>
+                            <td className="px-2 py-1.5 text-[11px] font-semibold text-[#222222] border-b border-gray-300 border-r border-gray-300">{sub.name}</td>
+                            <td className="px-2 py-1.5 text-[11px] text-center text-gray-600 border-b border-gray-300 border-r border-gray-300">{sub.maxMarks}</td>
+                            <td className="px-2 py-1.5 text-[11px] text-center text-gray-600 border-b border-gray-300 border-r border-gray-300">{sub.passingMarks}</td>
+                            <td className="px-2 py-1.5 text-center border-b border-gray-300 border-r border-gray-300"><input type="number" min={0} max={sub.maxMarks} className="w-14 text-center text-[11px] border border-gray-300 px-1 py-0.5" placeholder="0" value={m.practicalMax || ''} onChange={(e) => handleMarksChange(sub.id, 'practicalMax', e.target.value, sub.maxMarks)} /></td>
+                            <td className="px-2 py-1.5 text-center border-b border-gray-300 border-r border-gray-300"><input type="number" min={0} max={sub.maxMarks - m.practicalMax} className="w-14 text-center text-[11px] border border-gray-300 px-1 py-0.5" placeholder="0" value={has ? m.theory : ''} onChange={(e) => handleMarksChange(sub.id, 'theory', e.target.value, sub.maxMarks - m.practicalMax)} /></td>
+                            <td className="px-2 py-1.5 text-center border-b border-gray-300 border-r border-gray-300"><input type="number" min={0} max={m.practicalMax} className="w-14 text-center text-[11px] border border-gray-300 px-1 py-0.5" placeholder="0" value={has ? m.practical : ''} onChange={(e) => handleMarksChange(sub.id, 'practical', e.target.value, m.practicalMax)} /></td>
+                            <td className="px-2 py-1.5 text-[11px] text-center font-bold text-[#222222] border-b border-gray-300 border-r border-gray-300">{has ? total : '—'}</td>
+                            <td className="px-2 py-1.5 text-center border-b border-gray-300">{has ? (total >= sub.passingMarks ? <span className="text-[10px] text-[#2E7D32] font-medium">Pass</span> : <span className="text-[10px] text-[#C62828] font-medium">Fail</span>) : <span className="text-[10px] text-gray-300">—</span>}</td>
                           </tr>
                         )
                       })}
@@ -353,8 +390,15 @@ function Results() {
                 </div>
                 )}
                 {calculations && Object.keys(subjectMarks).length > 0 && (
-                  <Card padding="sm" className="border border-gray-300 bg-gray-50"><p className="text-[10px] font-bold text-[#222222] mb-1 flex items-center gap-1"><Calculator className="w-3 h-3" /> LIVE CALCULATION</p>
-                    <div className="grid grid-cols-5 gap-2 text-[11px]"><div><span className="text-gray-500">Total:</span> <strong>{calculations.total}/{calculations.maxTotal}</strong></div><div><span className="text-gray-500">%:</span> <strong>{calculations.percentage.toFixed(1)}%</strong></div><div><span className="text-gray-500">Grade:</span> <strong>{calculations.grade}</strong></div><div><span className="text-gray-500">Status:</span> {calculations.pass ? <span className="badge-success">Pass</span> : <span className="badge-danger">Fail</span>}</div><div><span className="text-gray-500">Subjects:</span> <strong>{calculations.subjectResults.filter(s => s.passed).length}/{courseSubjects.length}</strong> <span className={`ml-1 ${calculations.failedCount > 0 ? 'text-[#C62828]' : 'text-gray-400'}`}>({calculations.failedCount} fail)</span></div></div>
+                  <Card padding="sm" className="border border-gray-300 bg-gray-50">
+                    <p className="text-[10px] font-bold text-[#222222] mb-1 flex items-center gap-1"><Calculator className="w-3 h-3" /> LIVE CALCULATION</p>
+                    <div className="grid grid-cols-5 gap-2 text-[11px]">
+                      <div><span className="text-gray-500">Total:</span> <strong>{calculations.total}/{calculations.maxTotal}</strong></div>
+                      <div><span className="text-gray-500">%:</span> <strong>{calculations.percentage.toFixed(1)}%</strong></div>
+                      <div><span className="text-gray-500">Grade:</span> <strong>{calculations.grade}</strong></div>
+                      <div><span className="text-gray-500">Status:</span> {calculations.pass ? <span className="badge-success">Pass</span> : <span className="badge-danger">Fail</span>}</div>
+                      <div><span className="text-gray-500">Subjects:</span> <strong>{calculations.subjectResults.filter(s => s.passed).length}/{courseSubjects.length}</strong> <span className={`ml-1 ${calculations.failedCount > 0 ? 'text-[#C62828]' : 'text-gray-400'}`}>({calculations.failedCount} fail)</span></div>
+                    </div>
                   </Card>
                 )}
                 <div className="flex justify-between">

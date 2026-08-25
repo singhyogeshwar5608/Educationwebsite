@@ -58,6 +58,8 @@ class StudentController extends Controller
             'admissionDate' => ['required', 'date'],
             'status' => ['nullable', 'string', 'max:255'],
             'photo' => ['nullable', 'string'],
+            'aadhaarCard' => ['nullable', 'string'],
+            'matricDmc' => ['nullable', 'string'],
         ]);
 
         $course = Course::findOrFail($validated['courseId']);
@@ -79,6 +81,8 @@ class StudentController extends Controller
             'admission_date' => $validated['admissionDate'] ?? now()->toDateString(),
             'status' => $validated['status'] ?? 'Active',
             'photo' => $validated['photo'] ?? null,
+            'aadhaar_card' => $validated['aadhaarCard'] ?? null,
+            'matric_dmc' => $validated['matricDmc'] ?? null,
             'registration_number' => $request->registrationNo ?? "REG{$year}{$seq}",
             'roll_number' => $request->rollNo ?? "{$code}{$seq}",
         ]);
@@ -109,6 +113,8 @@ class StudentController extends Controller
             'admissionDate' => ['required', 'date'],
             'status' => ['nullable', 'string', 'max:255'],
             'photo' => ['nullable', 'string'],
+            'aadhaarCard' => ['nullable', 'string'],
+            'matricDmc' => ['nullable', 'string'],
         ]);
 
         $student->update([
@@ -125,6 +131,8 @@ class StudentController extends Controller
             'admission_date' => $validated['admissionDate'] ?? $student->admission_date,
             'status' => $validated['status'] ?? $student->status,
             'photo' => $validated['photo'] ?? $student->photo,
+            'aadhaar_card' => $validated['aadhaarCard'] ?? $student->aadhaar_card,
+            'matric_dmc' => $validated['matricDmc'] ?? $student->matric_dmc,
         ]);
 
         return response()->json($this->map($student->load(['course', 'results'])));
@@ -162,6 +170,8 @@ class StudentController extends Controller
             'rollNo' => $student->roll_number,
             'status' => $student->status,
             'photo' => $student->photo ? url('storage/' . ltrim($student->photo, '/')) : null,
+            'aadhaarCard' => $student->aadhaar_card ? url('storage/' . ltrim($student->aadhaar_card, '/')) : null,
+            'matricDmc' => $student->matric_dmc ? url('storage/' . ltrim($student->matric_dmc, '/')) : null,
             'resultPublished' => $latestResult !== null,
             'passed' => $latestResult ? ($latestResult->result_status === 'PASS' || $latestResult->result_status === 'DISTINCTION') : null,
             'certificateIssued' => $hasCertificate,

@@ -26,6 +26,7 @@ function toCertificateDoc(c: CertificateData): CertificateDoc {
     grade: c.grade || "",
     date: c.issueDate || "",
     instituteName: c.instituteName || "Z-TECH CAREER ACADEMY",
+    photo: c.photo || undefined,
   };
 }
 

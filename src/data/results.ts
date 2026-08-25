@@ -13,6 +13,8 @@ export interface StudentResult {
   registrationNumber?: string;
   studentName: string;
   fatherName: string;
+  motherName?: string;
+  dob?: string;
   courseName: string;
   courseDuration: string;
   batchYear: string;

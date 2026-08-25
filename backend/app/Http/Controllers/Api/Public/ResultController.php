@@ -29,6 +29,10 @@ class ResultController extends Controller
                 'subject' => $mark->subject_name,
                 'maxMarks' => $mark->max_marks,
                 'obtainedMarks' => $mark->obtained_marks,
+                'theoryMaxMarks' => $mark->theory_max_marks,
+                'theoryMarks' => $mark->theory_obtained_marks,
+                'practicalMaxMarks' => $mark->practical_max_marks,
+                'practicalMarks' => $mark->practical_obtained_marks,
             ];
         })->values()->toArray();
 
@@ -37,6 +41,8 @@ class ResultController extends Controller
             'registrationNumber' => $student->registration_number,
             'studentName' => $student->name,
             'fatherName' => $student->father_name,
+            'motherName' => $student->mother_name,
+            'dob' => $student->date_of_birth?->format('d-m-Y'),
             'courseName' => $student->course?->title,
             'courseDuration' => $student->course?->duration,
             'batchYear' => $student->batch,

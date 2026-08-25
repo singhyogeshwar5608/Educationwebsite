@@ -25,6 +25,21 @@ Route::get('gallery', [App\Http\Controllers\Api\Public\GalleryController::class,
 
 /*
 |--------------------------------------------------------------------------
+| Storage Proxy (CORS-safe file serving for canvas/PDF export)
+|--------------------------------------------------------------------------
+| Serves /storage/* files through the API so cross-origin frontends can draw
+| them onto a canvas without tainting it.
+|--------------------------------------------------------------------------
+*/
+Route::get('storage/{path}', [App\Http\Controllers\Api\Public\StorageProxyController::class, 'show'])
+    ->where('path', '.*');
+
+// Extension-free URL for base64 delivery — the CDN does not treat it as a
+// static asset, so CORS headers survive (see StorageProxyController::base64).
+Route::get('storage-base64', [App\Http\Controllers\Api\Public\StorageProxyController::class, 'base64']);
+
+/*
+|--------------------------------------------------------------------------
 | Admin API Routes
 |--------------------------------------------------------------------------
 */

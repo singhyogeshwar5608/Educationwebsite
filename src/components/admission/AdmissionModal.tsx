@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, createContext, useContext } from "react";
+import { useState, useRef, useEffect, useMemo, createContext, useContext } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, CheckCircle2, AlertCircle, X, GraduationCap } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, X, GraduationCap, Search, BookOpen } from "lucide-react";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { publicService } from "@/services/public.service";
 import type { Course } from "@/data/courses";
@@ -43,12 +43,32 @@ const inputCls =
 const labelCls = "block text-sm font-medium text-navy mb-1.5";
 const errCls = "text-red-500 text-xs mt-1";
 
+function HighlightText({ text, search }: { text: string; search: string }) {
+  if (!search.trim()) return <>{text}</>;
+  const regex = new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-gold/40 text-navy font-semibold rounded-sm px-0.5">{part}</mark>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
 function AdmissionModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const {
     register,
     handleSubmit,
     reset,
     setError,
+    setValue,
+    watch,
+    trigger,
     formState: { errors, isSubmitting },
   } = useForm<AdmissionFormValues>({
     resolver: zodResolver(admissionSchema),
@@ -56,11 +76,32 @@ function AdmissionModal({ open, onClose }: { open: boolean; onClose: () => void 
   });
   const [submitted, setSubmitted] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [courseSearch, setCourseSearch] = useState("");
+  const [courseDropdownOpen, setCourseDropdownOpen] = useState(false);
+  const courseDropdownRef = useRef<HTMLDivElement>(null);
+  const courseSearchRef = useRef<HTMLInputElement>(null);
+  const courseIdValue = watch("courseId");
 
   const { data: courses = [] } = useQuery<Course[]>({
     queryKey: ["public-courses-all"],
     queryFn: () => publicService.courses.list() as Promise<Course[]>,
   });
+
+  const filteredCourses = useMemo(() => {
+    if (!courseSearch.trim()) return courses;
+    const lower = courseSearch.toLowerCase();
+    return courses.filter((c) => c.title.toLowerCase().includes(lower));
+  }, [courses, courseSearch]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (courseDropdownRef.current && !courseDropdownRef.current.contains(e.target as Node)) {
+        setCourseDropdownOpen(false);
+      }
+    }
+    if (courseDropdownOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [courseDropdownOpen]);
 
   const onSubmit = async (values: AdmissionFormValues) => {
     setServerError("");
@@ -81,7 +122,7 @@ function AdmissionModal({ open, onClose }: { open: boolean; onClose: () => void 
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setSubmitted(false); setServerError(""); reset(defaultValues); } }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setSubmitted(false); setServerError(""); setCourseSearch(""); setCourseDropdownOpen(false); reset(defaultValues); } }}>
       <DialogContent className="max-w-lg rounded-2xl border-0 p-0 gap-0 overflow-hidden" showCloseButton={false}>
         {/* Header */}
         <div className="bg-navy px-6 py-5 relative">
@@ -165,12 +206,70 @@ function AdmissionModal({ open, onClose }: { open: boolean; onClose: () => void 
               </div>
               <div className="sm:col-span-2">
                 <label className={labelCls}>Course <span className="text-red-500">*</span></label>
-                <select {...register("courseId")} className={inputCls}>
-                  <option value="">Select Course</option>
-                  {courses.map((c) => (
-                    <option key={c.id} value={c.id}>{c.title}</option>
-                  ))}
-                </select>
+                <div className="relative" ref={courseDropdownRef}>
+                  <div
+                    className={`flex items-center w-full bg-white border rounded-xl focus-within:ring-2 focus-within:ring-gold/50 focus-within:border-gold transition-all cursor-text ${errors.courseId ? 'border-red-300' : 'border-gray-200'}`}
+                    onClick={() => { setCourseDropdownOpen(true); setTimeout(() => courseSearchRef.current?.focus(), 0); }}
+                  >
+                    <BookOpen className="ml-4 w-4 h-4 text-gray-400 shrink-0" />
+                    {courseIdValue ? (
+                      <span className="flex-1 px-3 py-3 text-sm text-gray-900 truncate">
+                        {courses.find((c) => String(c.id) === String(courseIdValue))?.title || "Selected"}
+                      </span>
+                    ) : (
+                      <span className="flex-1 px-3 py-3 text-sm text-gray-400 select-none">Select Course</span>
+                    )}
+                    <button
+                      type="button"
+                      className="px-3 py-3 text-gray-400 hover:text-gray-600"
+                      onClick={(e) => { e.stopPropagation(); setCourseDropdownOpen((o) => !o); if (!courseDropdownOpen) setTimeout(() => courseSearchRef.current?.focus(), 0); }}
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+                  {courseDropdownOpen && (
+                    <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                      <div className="p-2 border-b border-gray-100">
+                        <div className="relative">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                          <input
+                            ref={courseSearchRef}
+                            type="text"
+                            placeholder="Search courses..."
+                            value={courseSearch}
+                            onChange={(e) => setCourseSearch(e.target.value)}
+                            className="w-full pl-8 pr-3 py-1.5 text-sm text-gray-900 placeholder:text-gray-400 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredCourses.length === 0 ? (
+                          <div className="px-3 py-4 text-center text-sm text-gray-400">No courses found</div>
+                        ) : (
+                          filteredCourses.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gold/10 transition-colors ${String(c.id) === String(courseIdValue) ? 'bg-gold/15 text-navy font-semibold' : 'text-gray-700'}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setValue("courseId", String(c.id), { shouldValidate: true });
+                                setCourseDropdownOpen(false);
+                                setCourseSearch("");
+                              }}
+                            >
+                              <BookOpen className="w-3.5 h-3.5 shrink-0 opacity-50" />
+                              <span className="truncate"><HighlightText text={c.title} search={courseSearch} /></span>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
                 {errors.courseId && <p className={errCls}>{errors.courseId.message}</p>}
               </div>
             </div>

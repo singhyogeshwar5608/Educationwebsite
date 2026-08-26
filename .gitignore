@@ -13,7 +13,7 @@ node_modules
 # testing
 /coverage
 
-# next.js
+# next.js (legacy, kept for reference)
 /.next/
 /out/
 
@@ -30,33 +30,30 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
 
 # vercel
 .vercel
 
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 local-*
-.claude
-.z-ai-config
 *.log
-dev.log
-dev.out.log
-test
-prompt
 
-server.log
 # Skills directory
 /skills/
 
-# Removed standalone admin app (use src/admin/ instead)
-/admin/
+# AI agent context and tool output
+agent-ctx/
+tool-results/
 
-# Removed dead Next.js app (project runs on Vite)
-/src/app/
-/.next/
-next-env.d.ts
+# Legacy files
+/prisma/
+/db/
+/scripts/
+/examples/
+/download/
+admin/
+package.next*.json

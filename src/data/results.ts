@@ -6,6 +6,10 @@ export interface SubjectMark {
   subject: string;
   maxMarks: number;
   obtainedMarks: number;
+  theoryMaxMarks?: number;
+  theoryMarks?: number;
+  practicalMaxMarks?: number;
+  practicalMarks?: number;
 }
 
 export interface StudentResult {

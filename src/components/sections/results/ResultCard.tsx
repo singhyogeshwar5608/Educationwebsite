@@ -14,16 +14,21 @@ interface ResultCardProps {
 // Map the public result payload into the shared marksheet document shape used by
 // both the public page and the admin panel (exact same coordinates).
 function toMarksheetDoc(result: StudentResult): MarksheetDoc {
-  const rows = result.subjects.map((s, i) => ({
-    code: String(i + 1).padStart(2, "0"),
-    name: s.subject,
-    maxMarks: s.maxMarks,
-    theoryObt: s.obtainedMarks,
-    practicalMax: 0,
-    practicalObt: 0,
-    subjectTotal: s.obtainedMarks,
-    passingMarks: Math.round(s.maxMarks * 0.33),
-  }));
+  const rows = result.subjects.map((s, i) => {
+    const practicalMax = s.practicalMaxMarks ?? 0;
+    const practicalObt = s.practicalMarks ?? 0;
+    const theoryObt = s.theoryMarks ?? s.obtainedMarks;
+    return {
+      code: String(i + 1).padStart(2, "0"),
+      name: s.subject,
+      maxMarks: s.maxMarks,
+      theoryObt,
+      practicalMax,
+      practicalObt,
+      subjectTotal: s.obtainedMarks,
+      passingMarks: Math.round(s.maxMarks * 0.33),
+    };
+  });
   return {
     rollNo: result.rollNumber || "",
     registrationNo: result.registrationNumber || result.rollNumber || "",

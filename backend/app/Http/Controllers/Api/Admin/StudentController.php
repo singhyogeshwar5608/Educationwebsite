@@ -65,7 +65,7 @@ class StudentController extends Controller
         $course = Course::findOrFail($validated['courseId']);
         $seq = str_pad((string) (Student::count() + 1), 3, '0', STR_PAD_LEFT);
         $year = now()->year;
-        $code = strtoupper($course->slug ?: 'COURSE');
+        $code = strtoupper($course->code ?: $course->slug ?: 'STU');
 
         $student = Student::create([
             'name' => $validated['name'],

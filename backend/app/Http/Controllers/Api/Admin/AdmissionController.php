@@ -113,7 +113,7 @@ class AdmissionController extends Controller
 
         $course = $admission->course ?? $admission->course()->first();
         $seq = str_pad((string) (Student::count() + 1), 3, '0', STR_PAD_LEFT);
-        $code = $course ? strtoupper($course->slug ?: 'COURSE') : 'STU';
+        $code = $course ? strtoupper($course->code ?: $course->slug ?: 'STU') : 'STU';
 
         Student::create([
             'name' => $admission->student_name,

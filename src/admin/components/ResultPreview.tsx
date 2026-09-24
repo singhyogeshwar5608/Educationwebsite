@@ -34,12 +34,12 @@ const DESIGN_W = 1131
 const DESIGN_H = 1600
 
 // Marks table geometry (matches the table overlay below).
-const MARKS_TABLE_TOP = 915
-const MARKS_ROW_H = 49.5
+const MARKS_TABLE_TOP = 760
+const MARKS_ROW_H = 60
 const MARKS_FONT = 18
 // Subject code column — absolute overlay.
-const SUBJECT_CODE_X = 54
-const SUBJECT_CODE_W = 110
+const SUBJECT_CODE_X = 53
+const SUBJECT_CODE_W = 58
 
 function shortYear(fullBatchOrDate: string | undefined | null): string {
   if (!fullBatchOrDate) return ''
@@ -133,11 +133,11 @@ function buildSubjectRows(result: Result): SubjectRow[] {
 
 // Marks table column widths (same percentages as the HTML <table>), as fractions
 // of the table width, so both the preview and the canvas export share them.
-const MARKS_COLS = [0.11003, 0.32902, 0.09709, 0.08954, 0.09924, 0.09169, 0.08954, 0.09385]
-const MARKS_TABLE_LEFT = 53
-const MARKS_TABLE_W = 1024
-const MARKS_TOTAL_TOP = 1311
-const MARKS_TOTAL_ROW_H = 49
+const MARKS_COLS = [0.05957, 0.43300, 0.07333, 0.06849, 0.06365, 0.06849, 0.06655, 0.16692]
+const MARKS_TABLE_LEFT = 88
+const MARKS_TABLE_W = 1033
+const MARKS_TOTAL_TOP = 1207
+const MARKS_TOTAL_ROW_H = 46
 
 // Draw the marksheet onto a canvas: background + every field/table cell at exact
 // coordinates. Used by the PDF export — html2canvas is unreliable with absolute
@@ -197,64 +197,68 @@ async function renderMarksheetToCanvas(
     value: string | number,
     wrap = false,
     offsetX = 0,
+    vAlign: 'middle' | 'top' = 'middle',
+    fontSize = 18,
   ) => {
     if (value === '' || value === undefined || value === null) return
     ctx.fillStyle = '#000'
-    ctx.font = `700 18px ${font}`
+    ctx.font = `700 ${fontSize}px ${font}`
     ctx.textAlign = align
-    ctx.textBaseline = 'middle'
+    ctx.textBaseline = vAlign === 'top' ? 'top' : 'middle'
     let drawX = x + offsetX
     if (align === 'center') drawX = x + offsetX + w / 2
     if (align === 'right') drawX = x + offsetX + w
     const str = String(value)
     if (!wrap) {
-      ctx.fillText(str, drawX, y + h / 2)
+      ctx.fillText(str, drawX, vAlign === 'top' ? y : y + h / 2)
       return
     }
-    // Wrap long text into up to 2 centered lines so it stays inside its cell.
+    // Wrap long text into up to 2 lines that always fit inside the cell width.
     const words = str.split(/\s+/)
-    let line1 = ''
-    let line2 = ''
-    if (words.length === 1) {
-      let mid = Math.floor(str.length / 2)
-      while (mid > 0 && ctx.measureText(str.slice(0, mid)).width > w) mid--
-      line1 = str.slice(0, mid)
-      line2 = str.slice(mid)
-    } else {
-      for (const word of words) {
-        const candidate = line2 ? line2 + ' ' + word : word
-        if (ctx.measureText(candidate).width <= w) {
-          line2 = candidate
-        } else if (!line1) {
-          line1 = line2
-          line2 = word
-        } else {
-          line2 += ' ' + word
-        }
-      }
+    const lines: string[] = []
+    let cur = ''
+    const fit = (s: string) => ctx.measureText(s).width <= w
+    const hardBreak = (s: string) => {
+      if (fit(s)) return s
+      let end = s.length
+      while (end > 0 && ctx.measureText(s.slice(0, end)).width > w) end--
+      return s.slice(0, Math.max(end, 1))
     }
-    const lineH = 20
-    if (line1) ctx.fillText(line1, drawX, y + h / 2 - lineH / 2)
-    if (line2) ctx.fillText(line2, drawX, y + h / 2 + lineH / 2)
+    for (const word of words) {
+      const candidate = cur ? `${cur} ${word}` : word
+      if (!cur || fit(candidate)) {
+        cur = candidate
+      } else {
+        lines.push(hardBreak(cur))
+        cur = word
+      }
+      if (lines.length > 2) break
+    }
+    if (cur) lines.push(hardBreak(cur))
+    const line1 = lines[0]
+    const line2 = lines[1]
+    const lineH = 22
+    if (line1) ctx.fillText(line1, drawX, vAlign === 'top' ? y : y + h / 2 - lineH / 2)
+    if (line2) ctx.fillText(line2, drawX, vAlign === 'top' ? y + lineH : y + h / 2 + lineH / 2)
   }
 
   // Header fields
-  text(170, 66, 165, 21, 'left', true, result.rollNo || '—')
-  text(805, 66, 188, 21, 'right', true, student?.registrationNo || '—')
-  text(193, 503, 740, 27, 'center', true, result.course || '')
-  text(315, 603, 364, 20, 'left', true, result.studentName || '')
-  text(861, 603, 260, 20, 'left', true, fmtDate(student?.dob))
-  text(315, 647, 364, 20, 'left', true, student?.fatherName || '')
-  text(906, 649, 221, 20, 'left', true, student?.duration || (result as any)?.duration || '1 Year')
-  text(315, 693, 364, 20, 'left', true, student?.motherName || '')
-  text(890, 695, 260, 20, 'left', true, student?.batch || shortYear(result.publishedDate))
-  text(315, 742, 596, 20, 'left', true, instituteName)
+  text(190, 96, 165, 19, 'left', true, result.rollNo || '—')
+  text(840, 96, 188, 19, 'right', true, student?.registrationNo || '—')
+  text(193, 390, 740, 26, 'center', true, result.course || '')
+  text(365, 467, 364, 19, 'left', true, result.studentName || '')
+  text(890, 467, 260, 20, 'left', true, fmtDate(student?.dob))
+  text(365, 506, 364, 19, 'left', true, student?.fatherName || '')
+  text(890, 506, 221, 20, 'left', true, student?.duration || (result as any)?.duration || '1 Year')
+  text(365, 545, 364, 19, 'left', true, student?.motherName || '')
+  text(890, 545, 260, 20, 'left', true, student?.batch || shortYear(result.publishedDate))
+  text(365, 584, 596, 19, 'left', true, instituteName)
 
   // Student photo (if available)
   if (student?.photo) {
-    const px = DESIGN_W * 0.77
+    const px = DESIGN_W * 0.79
     const py = DESIGN_H * 0.083
-    const pw = DESIGN_W * 0.147
+    const pw = DESIGN_W * 0.137
     const ph = DESIGN_H * 0.136
     ctx.fillStyle = '#fff'
     ctx.fillRect(px, py, pw, ph)
@@ -278,33 +282,34 @@ async function renderMarksheetToCanvas(
   rows.forEach((r, i) => {
     const rowTop = MARKS_TABLE_TOP + i * MARKS_ROW_H
     let colX = MARKS_TABLE_LEFT
-    const cells: { align: 'left' | 'center'; value: string | number }[] = [
-      { align: 'center', value: '' },
-      { align: 'center', value: r.name },
+    const cells: { align: 'left' | 'center' | 'right'; value: string | number }[] = [
+      { align: 'right', value: r.code },
+      { align: 'left', value: r.name },
       { align: 'center', value: r.maxMarks },
       { align: 'center', value: r.passingMarks },
       { align: 'center', value: r.theoryObt },
       { align: 'center', value: r.practicalMax },
       { align: 'center', value: r.practicalObt },
-      { align: 'center', value: r.subjectTotal },
+      { align: 'left', value: r.subjectTotal },
     ]
     cells.forEach((c, ci) => {
       const colW = MARKS_COLS[ci] * MARKS_TABLE_W
-      if (ci !== 0 && c.value !== '') {
-        cellText(colX, rowTop, colW, MARKS_ROW_H, c.align, c.value, ci === 1, ci === 7 ? -18 : 0)
+      if (c.value !== '') {
+        cellText(
+          colX,
+          rowTop,
+          colW,
+          MARKS_ROW_H,
+          c.align,
+          c.value,
+          ci === 1,
+          ci === 0 ? -8 : ci === 1 ? 30 : ci === 7 ? 19 : 0,
+          'middle',
+          ci === 1 ? 20 : 18,
+        )
       }
       colX += colW
     })
-    // Subject code overlay (drawn at its own absolute column)
-    text(
-      SUBJECT_CODE_X,
-      rowTop + (MARKS_ROW_H - MARKS_FONT) / 2,
-      SUBJECT_CODE_W,
-      MARKS_FONT,
-      'center',
-      true,
-      r.code,
-    )
   })
 
   // TOTAL row
@@ -322,7 +327,7 @@ async function renderMarksheetToCanvas(
       { align: 'center', value: totalTheoryObt },
       { align: 'center', value: totalPracticalMax },
       { align: 'center', value: totalPracticalObt },
-      { align: 'center', value: result.total ?? calcTotalObt },
+      { align: 'left', value: result.total ?? calcTotalObt },
     ]
     cells.forEach((c, ci) => {
       const colW = MARKS_COLS[ci] * MARKS_TABLE_W
@@ -331,8 +336,8 @@ async function renderMarksheetToCanvas(
         ctx.font = `700 19px ${font}`
         ctx.textAlign = c.align
         ctx.textBaseline = 'middle'
-        let drawX = colX + (ci === 7 ? -18 : 0)
-        if (c.align === 'center') drawX = colX + (ci === 7 ? -18 : 0) + colW / 2
+        let drawX = colX + (ci === 7 ? 19 : 0)
+        if (c.align === 'center') drawX = colX + (ci === 7 ? 19 : 0) + colW / 2
         ctx.fillText(String(c.value), drawX, rowTop + MARKS_TOTAL_ROW_H / 2 + 6)
       }
       colX += colW
@@ -445,37 +450,37 @@ function MarksheetContent({
       }}
     >
       {/* Roll No & Reg No */}
-      <span style={abs(170,67, 165, 21, 'left')}>{result.rollNo || '—'}</span>
-      <span style={abs(805, 67, 188, 21, 'right')}>{student?.registrationNo || '—'}</span>
+      <span style={abs(184, 96, 165, 18, 'left')}>{result.rollNo || '—'}</span>
+      <span style={abs(837, 97, 188, 18, 'right')}>{student?.registrationNo || '—'}</span>
 
       {/* Course Title */}
-      <span style={abs(193, 503, 740, 27, 'center')}>{result.course || ''}</span>
+      <span style={abs(193, 390, 740, 26, 'center')}>{result.course || ''}</span>
 
       {/* Student Details */}
-      <span style={abs(315, 603, 364, 20, 'left')}>{result.studentName || ''}</span>
-      <span style={abs(861, 603, 260, 20, 'left')}>{fmtDate(student?.dob)}</span>
+      <span style={abs(365, 467, 364, 19, 'left')}>{result.studentName || ''}</span>
+      <span style={abs(890, 467, 260, 20, 'left')}>{fmtDate(student?.dob)}</span>
 
-      <span style={abs(315, 647, 364, 20, 'left')}>{student?.fatherName || ''}</span>
-      <span style={abs(906, 649, 221, 20, 'left')}>
+      <span style={abs(365, 506, 364, 19, 'left')}>{student?.fatherName || ''}</span>
+      <span style={abs(890, 506, 221, 20, 'left')}>
         {student?.duration || (result as any)?.duration || '1 Year'}
       </span>
 
-      <span style={abs(315, 693, 364, 20, 'left')}>{student?.motherName || ''}</span>
-      <span style={abs(890, 695, 260, 20, 'left')}>
+      <span style={abs(365, 545, 364, 19, 'left')}>{student?.motherName || ''}</span>
+      <span style={abs(890, 545, 260, 20, 'left')}>
         {student?.batch || shortYear(result.publishedDate)}
       </span>
 
-      <span style={abs(315, 742, 596, 20, 'left')}>{instituteName}</span>
+      <span style={abs(365, 584, 596, 19, 'left')}>{instituteName}</span>
 
       {/* Student Photo (if available) */}
       {student?.photo && (
         <div
           style={{
             position: 'absolute',
-            left: '77%',
-            top: '8.3%',
-            width: '14.7%',
-            height: '13.6%',
+            left: '80%',
+            top: '9.1%',
+            width: '12.7%',
+            height: '12.6%',
             border: '1.5px solid #000',
             overflow: 'hidden',
             background: '#fff',
@@ -493,9 +498,9 @@ function MarksheetContent({
       <table
         style={{
           position: 'absolute',
-          left: '53px',
-          top: '915px',
-          width: '1024px',
+          left: `${MARKS_TABLE_LEFT}px`,
+          top: `${MARKS_TABLE_TOP}px`,
+          width: `${MARKS_TABLE_W}px`,
           tableLayout: 'fixed',
           borderCollapse: 'collapse',
           fontFamily: ARIAL,
@@ -505,42 +510,43 @@ function MarksheetContent({
         }}
       >
         <colgroup>
-          <col style={{ width: '11.003%' }} />
-          <col style={{ width: '32.902%' }} />
-          <col style={{ width: '9.709%' }} />
-          <col style={{ width: '8.954%' }} />
-          <col style={{ width: '9.924%' }} />
-          <col style={{ width: '9.169%' }} />
-          <col style={{ width: '8.954%' }} />
-          <col style={{ width: '9.385%' }} />
+          {MARKS_COLS.map((w, i) => (
+            <col key={i} style={{ width: `${(w * 100).toFixed(3)}%` }} />
+          ))}
         </colgroup>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} style={{ height: '49.5px' }}>
+            <tr key={i} style={{ height: `${MARKS_ROW_H}px` }}>
               <td
                 style={{
-                  textAlign: 'center',
+                  textAlign: 'right',
                   verticalAlign: 'middle',
-                  padding: '0 2px',
+                  padding: '0 8px',
                 }}
-              ></td>
+              >
+                {r.code}
+              </td>
               <td
                 style={{
-                  textAlign: 'center',
+                  textAlign: 'left',
                   verticalAlign: 'middle',
-                  padding: '0 4px',
+                  padding: '0 30px',
                   lineHeight: 1.1,
-                  height: '49.5px',
+                  fontSize: '20px',
+                  height: `${MARKS_ROW_H}px`,
                 }}
               >
                 <div
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'center',
+                    alignItems: 'flex-start',
                     justifyContent: 'center',
                     height: '100%',
                     lineHeight: 1.1,
+                    wordBreak: 'break-word',
+                    overflow: 'hidden',
+                    whiteSpace: 'normal',
                   }}
                 >
                   {r.name}
@@ -561,7 +567,7 @@ function MarksheetContent({
               <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '0 2px' }}>
                 {r.practicalObt}
               </td>
-              <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '0 2px', position: 'relative', left: '-18px' }}>
+              <td style={{ textAlign: 'left', verticalAlign: 'middle', padding: '0 2px', paddingLeft: '19px' }}>
                 {r.subjectTotal}
               </td>
             </tr>
@@ -569,29 +575,13 @@ function MarksheetContent({
         </tbody>
       </table>
 
-      {/* Subject code overlay — absolute so it can be aligned independently of the table */}
-      {rows.map((r, i) => (
-        <span
-          key={`code-${i}`}
-          style={abs(
-            SUBJECT_CODE_X,
-            MARKS_TABLE_TOP + i * MARKS_ROW_H + (MARKS_ROW_H - MARKS_FONT) / 2,
-            SUBJECT_CODE_W,
-            MARKS_FONT,
-            'center',
-          )}
-        >
-          {r.code}
-        </span>
-      ))}
-
       {/* TOTAL Row Overlay */}
       <table
         style={{
           position: 'absolute',
-          left: '53px',
-          top: '1311px',
-          width: '1024px',
+          left: `${MARKS_TABLE_LEFT}px`,
+          top: `${MARKS_TOTAL_TOP}px`,
+          width: `${MARKS_TABLE_W}px`,
           tableLayout: 'fixed',
           borderCollapse: 'collapse',
           fontFamily: ARIAL,
@@ -601,17 +591,12 @@ function MarksheetContent({
         }}
       >
         <colgroup>
-          <col style={{ width: '11.003%' }} />
-          <col style={{ width: '32.902%' }} />
-          <col style={{ width: '9.709%' }} />
-          <col style={{ width: '8.954%' }} />
-          <col style={{ width: '9.924%' }} />
-          <col style={{ width: '9.169%' }} />
-          <col style={{ width: '8.954%' }} />
-          <col style={{ width: '9.385%' }} />
+          {MARKS_COLS.map((w, i) => (
+            <col key={i} style={{ width: `${(w * 100).toFixed(3)}%` }} />
+          ))}
         </colgroup>
         <tbody>
-          <tr style={{ height: '49px' }}>
+          <tr style={{ height: `${MARKS_TOTAL_ROW_H}px` }}>
             <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px' }}></td>
             <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px' }}></td>
             <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px' }}>
@@ -629,7 +614,7 @@ function MarksheetContent({
             <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px' }}>
               {rows.reduce((s, r) => s + r.practicalObt, 0)}
             </td>
-            <td style={{ textAlign: 'center', verticalAlign: 'middle', paddingTop: '6px', position: 'relative', left: '-18px' }}>
+            <td style={{ textAlign: 'left', verticalAlign: 'middle', paddingTop: '6px', paddingLeft: '19px' }}>
               {result.total ?? calcTotalObt}
             </td>
           </tr>

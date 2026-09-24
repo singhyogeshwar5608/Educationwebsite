@@ -51,16 +51,16 @@ function fmtDate(v?: string | null): string {
 const DESIGN_W = 1131;
 const DESIGN_H = 1600;
 
-const MARKS_TABLE_TOP = 915;
-const MARKS_ROW_H = 49.5;
+const MARKS_TABLE_TOP = 790;
+const MARKS_ROW_H = 55.5;
 const MARKS_FONT = 18;
-const SUBJECT_CODE_X = 54;
-const SUBJECT_CODE_W = 110;
-const MARKS_COLS = [0.11003, 0.32902, 0.09709, 0.08954, 0.09924, 0.09169, 0.08954, 0.09385];
-const MARKS_TABLE_LEFT = 53;
-const MARKS_TABLE_W = 1024;
-const MARKS_TOTAL_TOP = 1311;
-const MARKS_TOTAL_ROW_H = 49;
+const SUBJECT_CODE_X = 53;
+const SUBJECT_CODE_W = 58;
+const MARKS_COLS = [0.05957, 0.43300, 0.07333, 0.06849, 0.06365, 0.06849, 0.06655, 0.16692];
+const MARKS_TABLE_LEFT = 49;
+const MARKS_TABLE_W = 1033;
+const MARKS_TOTAL_TOP = 1300;
+const MARKS_TOTAL_ROW_H = 46;
 
 export interface MarksheetRow {
   code: string;
@@ -137,10 +137,11 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
     value: string | number,
     wrap = false,
     offsetX = 0,
+    fontSize = 18,
   ) => {
     if (value === "" || value === undefined || value === null) return;
     ctx.fillStyle = "#000";
-    ctx.font = `700 18px ${font}`;
+    ctx.font = `700 ${fontSize}px ${font}`;
     ctx.textAlign = align;
     ctx.textBaseline = "middle";
     let drawX = x + offsetX;
@@ -151,30 +152,31 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
       ctx.fillText(str, drawX, y + h / 2);
       return;
     }
-    // Wrap long text into up to 2 centered lines so it stays inside its cell.
+    // Wrap long text into up to 2 lines that always fit inside the cell width.
     const words = str.split(/\s+/);
-    let line1 = "";
-    let line2 = "";
-    if (words.length === 1) {
-      // No spaces: hard-break the long word.
-      let mid = Math.floor(str.length / 2);
-      while (mid > 0 && ctx.measureText(str.slice(0, mid)).width > w) mid--;
-      line1 = str.slice(0, mid);
-      line2 = str.slice(mid);
-    } else {
-      for (const word of words) {
-        const candidate = line2 ? line2 + " " + word : word;
-        if (ctx.measureText(candidate).width <= w) {
-          line2 = candidate;
-        } else if (!line1) {
-          line1 = line2;
-          line2 = word;
-        } else {
-          line2 += " " + word;
-        }
+    const lines: string[] = [];
+    let cur = "";
+    const fit = (s: string) => ctx.measureText(s).width <= w;
+    const hardBreak = (s: string) => {
+      if (fit(s)) return s;
+      let end = s.length;
+      while (end > 0 && ctx.measureText(s.slice(0, end)).width > w) end--;
+      return s.slice(0, Math.max(end, 1));
+    };
+    for (const word of words) {
+      const candidate = cur ? `${cur} ${word}` : word;
+      if (!cur || fit(candidate)) {
+        cur = candidate;
+      } else {
+        lines.push(hardBreak(cur));
+        cur = word;
       }
+      if (lines.length > 2) break;
     }
-    const lineH = 20;
+    if (cur) lines.push(hardBreak(cur));
+    const line1 = lines[0];
+    const line2 = lines[1];
+    const lineH = 22;
     if (line1) ctx.fillText(line1, drawX, y + h / 2 - lineH / 2);
     if (line2) ctx.fillText(line2, drawX, y + h / 2 + lineH / 2);
   };
@@ -219,20 +221,20 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
   doc.rows.forEach((r, i) => {
     const rowTop = MARKS_TABLE_TOP + i * MARKS_ROW_H;
     let colX = MARKS_TABLE_LEFT;
-    const cells: { align: "left" | "center"; value: string | number }[] = [
+    const cells: { align: "left" | "center" | "right"; value: string | number }[] = [
       { align: "center", value: "" },
-      { align: "center", value: r.name },
+      { align: "left", value: r.name },
       { align: "center", value: r.maxMarks },
       { align: "center", value: r.passingMarks },
       { align: "center", value: r.theoryObt },
       { align: "center", value: r.practicalMax },
       { align: "center", value: r.practicalObt },
-      { align: "center", value: r.subjectTotal },
+      { align: "left", value: r.subjectTotal },
     ];
     cells.forEach((c, ci) => {
       const colW = MARKS_COLS[ci] * MARKS_TABLE_W;
-      if (ci !== 0 && c.value !== "") {
-        cellText(colX, rowTop, colW, MARKS_ROW_H, c.align, c.value, ci === 1, ci === 7 ? -18 : 0);
+      if (c.value !== "" && !(ci === 0)) {
+        cellText(colX, rowTop, colW, MARKS_ROW_H, c.align, c.value, ci === 1, ci === 1 ? 30 : ci === 7 ? 19 : 0, ci === 1 ? 20 : 18);
       }
       colX += colW;
     });
@@ -241,7 +243,7 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
       rowTop + (MARKS_ROW_H - MARKS_FONT) / 2,
       SUBJECT_CODE_W,
       MARKS_FONT,
-      "center",
+      "right",
       true,
       r.code,
     );
@@ -262,7 +264,7 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
       { align: "center", value: totalTheoryObt },
       { align: "center", value: totalPracticalMax },
       { align: "center", value: totalPracticalObt },
-      { align: "center", value: doc.total },
+      { align: "left", value: doc.total },
     ];
     cells.forEach((c, ci) => {
       const colW = MARKS_COLS[ci] * MARKS_TABLE_W;
@@ -271,8 +273,8 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
         ctx.font = `700 19px ${font}`;
         ctx.textAlign = c.align;
         ctx.textBaseline = "middle";
-        let drawX = colX + (ci === 7 ? -18 : 0);
-        if (c.align === "center") drawX = colX + (ci === 7 ? -18 : 0) + colW / 2;
+        let drawX = colX + (ci === 7 ? 19 : 0);
+        if (c.align === "center") drawX = colX + (ci === 7 ? 19 : 0) + colW / 2;
         ctx.fillText(String(c.value), drawX, rowTop + MARKS_TOTAL_ROW_H / 2 + 6);
       }
       colX += colW;
@@ -411,14 +413,9 @@ export default function MarksheetDocument({
               }}
             >
               <colgroup>
-                <col style={{ width: "11.003%" }} />
-                <col style={{ width: "32.902%" }} />
-                <col style={{ width: "9.709%" }} />
-                <col style={{ width: "8.954%" }} />
-                <col style={{ width: "9.924%" }} />
-                <col style={{ width: "9.169%" }} />
-                <col style={{ width: "8.954%" }} />
-                <col style={{ width: "9.385%" }} />
+                {MARKS_COLS.map((w, i) => (
+                  <col key={i} style={{ width: `${(w * 100).toFixed(3)}%` }} />
+                ))}
               </colgroup>
               <tbody>
                 {doc.rows.map((r, i) => (
@@ -426,10 +423,11 @@ export default function MarksheetDocument({
                     <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px" }}></td>
                     <td
                       style={{
-                        textAlign: "center",
+                        textAlign: "left",
                         verticalAlign: "middle",
-                        padding: "0 4px",
+                        padding: "0 30px",
                         lineHeight: 1.1,
+                        fontSize: "20px",
                         height: `${MARKS_ROW_H}px`,
                       }}
                     >
@@ -437,10 +435,13 @@ export default function MarksheetDocument({
                         style={{
                           display: "flex",
                           flexDirection: "column",
-                          alignItems: "center",
+                          alignItems: "flex-start",
                           justifyContent: "center",
                           height: "100%",
                           lineHeight: 1.1,
+                          wordBreak: "break-word",
+                          overflow: "hidden",
+                          whiteSpace: "normal",
                         }}
                       >
                         {r.name}
@@ -451,7 +452,7 @@ export default function MarksheetDocument({
                     <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px" }}>{r.theoryObt}</td>
                     <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px" }}>{r.practicalMax}</td>
                     <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px" }}>{r.practicalObt}</td>
-                    <td style={{ textAlign: "center", verticalAlign: "middle", padding: "0 2px", position: "relative", left: "-18px" }}>{r.subjectTotal}</td>
+                    <td style={{ textAlign: "left", verticalAlign: "middle", padding: "0 2px", paddingLeft: "19px" }}>{r.subjectTotal}</td>
                   </tr>
                 ))}
               </tbody>
@@ -465,7 +466,7 @@ export default function MarksheetDocument({
                   MARKS_TABLE_TOP + i * MARKS_ROW_H + (MARKS_ROW_H - MARKS_FONT) / 2,
                   SUBJECT_CODE_W,
                   MARKS_FONT,
-                  "center",
+                  "right",
                   true,
                 )}
               >
@@ -488,25 +489,20 @@ export default function MarksheetDocument({
               }}
             >
               <colgroup>
-                <col style={{ width: "11.003%" }} />
-                <col style={{ width: "32.902%" }} />
-                <col style={{ width: "9.709%" }} />
-                <col style={{ width: "8.954%" }} />
-                <col style={{ width: "9.924%" }} />
-                <col style={{ width: "9.169%" }} />
-                <col style={{ width: "8.954%" }} />
-                <col style={{ width: "9.385%" }} />
+                {MARKS_COLS.map((w, i) => (
+                  <col key={i} style={{ width: `${(w * 100).toFixed(3)}%` }} />
+                ))}
               </colgroup>
               <tbody>
                 <tr style={{ height: `${MARKS_TOTAL_ROW_H}px` }}>
                   <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}></td>
                   <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}></td>
-                  <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}>{doc.maxTotal}</td>
+<td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}>{doc.maxTotal}</td>
                   <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}>{doc.totalPassing}</td>
                   <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}>{doc.rows.reduce((s, r) => s + r.theoryObt, 0)}</td>
                   <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}>{doc.rows.reduce((s, r) => s + r.practicalMax, 0)}</td>
                   <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px" }}>{doc.rows.reduce((s, r) => s + r.practicalObt, 0)}</td>
-                  <td style={{ textAlign: "center", verticalAlign: "middle", paddingTop: "6px", position: "relative", left: "-18px" }}>{doc.total}</td>
+                  <td style={{ textAlign: "left", verticalAlign: "middle", paddingTop: "6px", paddingLeft: "19px" }}>{doc.total}</td>
                 </tr>
               </tbody>
             </table>

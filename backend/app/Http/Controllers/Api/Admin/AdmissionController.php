@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AdmissionRequest;
 use App\Models\Student;
+use App\Support\StudentNumbering;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -51,6 +52,7 @@ class AdmissionController extends Controller
             'admissionDate' => ['nullable', 'date'],
             'photo' => ['nullable', 'string'],
             'aadhaarCard' => ['nullable', 'string'],
+            'aadhaarNumber' => ['nullable', 'string', 'regex:/^[0-9]{12}$/'],
             'matricDmc' => ['nullable', 'string'],
         ]);
 
@@ -69,6 +71,7 @@ class AdmissionController extends Controller
             'status' => 'Pending',
             'photo' => $validated['photo'] ?? null,
             'aadhaar_card' => $validated['aadhaarCard'] ?? null,
+            'aadhaar_number' => $validated['aadhaarNumber'] ?? null,
             'matric_dmc' => $validated['matricDmc'] ?? null,
         ]);
 
@@ -112,8 +115,8 @@ class AdmissionController extends Controller
         }
 
         $course = $admission->course ?? $admission->course()->first();
-        $seq = str_pad((string) (Student::count() + 1), 3, '0', STR_PAD_LEFT);
         $code = $course ? strtoupper($course->code ?: $course->slug ?: 'STU') : 'STU';
+        $batch = $admission->batch ?? now()->year . '-' . (now()->year + 1);
 
         Student::create([
             'name' => $admission->student_name,
@@ -125,13 +128,15 @@ class AdmissionController extends Controller
             'email' => $admission->email,
             'address' => $admission->address ?? '',
             'course_id' => $admission->course_id,
-            'batch' => $admission->batch ?? now()->year . '-' . (now()->year + 1),
+            'batch' => $batch,
             'admission_date' => now()->toDateString(),
             'status' => 'Active',
-            'roll_number' => $code . $seq,
-            'registration_number' => 'REG' . now()->year . $seq,
+            'roll_number' => StudentNumbering::nextRollNumber($code),
+            'registration_number' => StudentNumbering::nextRegistrationNumber($batch),
+            'enrollment_number' => StudentNumbering::nextEnrollmentNumber($batch),
             'photo' => $admission->photo,
             'aadhaar_card' => $admission->aadhaar_card,
+            'aadhaar_number' => $admission->aadhaar_number,
             'matric_dmc' => $admission->matric_dmc,
         ]);
     }
@@ -155,6 +160,7 @@ class AdmissionController extends Controller
             'status' => $admission->status,
             'photo' => $admission->photo ? url('storage/' . ltrim($admission->photo, '/')) : null,
             'aadhaarCard' => $admission->aadhaar_card ? url('storage/' . ltrim($admission->aadhaar_card, '/')) : null,
+            'aadhaarNumber' => $admission->aadhaar_number,
             'matricDmc' => $admission->matric_dmc ? url('storage/' . ltrim($admission->matric_dmc, '/')) : null,
         ];
     }

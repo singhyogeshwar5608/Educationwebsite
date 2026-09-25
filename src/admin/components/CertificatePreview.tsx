@@ -146,16 +146,16 @@ function buildCertFields(
   return [
     { x: sX(170), y: sY(40), w: sW(420), fontSize: sF(24), align: 'left', bold: true, text: data.certificateNo || data.rollNo || '' },
     { x: sX(1140), y: sY(40), w: sW(250), fontSize: sF(24), align: 'right', bold: true, text: data.enrollmentNo || student?.registrationNo || '' },
-    { x: sX(500), y: sY(507), w: sW(560), fontSize: sF(32), align: 'center', bold: true, text: data.studentName || '' },
-    { x: sX(350), y: sY(552), w: sW(560), fontSize: sF(30), align: 'center', bold: true, text: student?.fatherName || '' },
+    { x: sX(500), y: sY(509), w: sW(560), fontSize: sF(28), align: 'center', bold: true, text: data.studentName || '' },
+    { x: sX(630), y: sY(554), w: sW(1200), fontSize: sF(28), align: 'left', bold: true, text: student?.fatherName || '' },
     { x: sX(455), y: sY(598), w: sW(250), fontSize: sF(28), align: 'right', bold: true, text: data.enrollmentNo || student?.registrationNo || '' },
     { x: sX(450), y: sY(682), w: sW(600), fontSize: sF(32), align: 'center', bold: true, text: data.course || '' },
     { x: sX(260), y: sY(739), w: sW(290), fontSize: sF(28), align: 'center', bold: true, text: data.duration || course?.duration || student?.duration || '' },
     { x: sX(600), y: sY(739), w: sW(290), fontSize: sF(28), align: 'center', bold: true, text: data.session || student?.batch || shortYear(data.issueDate || data.publishedDate) },
     { x: sX(1020), y: sY(739), w: sW(280), fontSize: sF(28), align: 'right', bold: true, text: data.percentage != null ? `${data.percentage}%` : '' },
     { x: sX(1000), y: sY(739), w: sW(240), fontSize: sF(28), align: 'left', bold: true, text: data.grade || '' },
-    { x: sX(310), y: sY(891), w: sW(220), fontSize: sF(24), align: 'center', bold: true, text: fmtDate(data.issueDate || data.publishedDate) },
-    { x: sX(90), y: sY(960), w: sW(500), fontSize: sF(16), align: 'left', bold: false, text: instituteName },
+    // { x: sX(310), y: sY(891), w: sW(220), fontSize: sF(24), align: 'center', bold: true, text: fmtDate(data.issueDate || data.publishedDate) },
+    // { x: sX(90), y: sY(960), w: sW(500), fontSize: sF(16), align: 'left', bold: false, text: instituteName },
     // Student photo (positioned like marksheet: right side, near top)
     ...(photoUrl ? [{ x: sX(1280), y: sY(298), w: sW(180), h: sH(235), fontSize: 0, align: 'left', bold: false, text: '__PHOTO__', photoUrl } as CertField & { photoUrl: string }] : []),
   ]

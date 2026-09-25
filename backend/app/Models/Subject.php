@@ -10,7 +10,7 @@ class Subject extends Model
 {
     protected $fillable = ['name', 'max_marks', 'passing_marks'];
 
-    public function courses(): BelongsToMany { return $this->belongsToMany(Course::class); }
+    public function courses(): BelongsToMany { return $this->belongsToMany(Course::class)->withPivot('year'); }
 
     public function syllabusTopics(): HasMany { return $this->hasMany(SubjectSyllabusTopic::class)->orderBy('sort_order'); }
 }

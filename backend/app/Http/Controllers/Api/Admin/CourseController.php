@@ -124,7 +124,7 @@ class CourseController extends Controller
     private function validateCourse(Request $request, ?Course $course = null): array
     {
         // FormData (multipart) sends nested fields as JSON strings — decode before validation.
-        foreach (['eligibility', 'subjectSyllabus'] as $jsonField) {
+        foreach (['eligibility', 'subjectSyllabus', 'subjectYears'] as $jsonField) {
             if ($request->has($jsonField) && is_string($request->input($jsonField))) {
                 $decoded = json_decode($request->input($jsonField), true);
                 $request->merge([$jsonField => is_array($decoded) ? $decoded : []]);
@@ -159,6 +159,8 @@ class CourseController extends Controller
             'eligibility' => ['nullable', 'array'],
             'subjects' => ['nullable', 'array'],
             'subjects.*' => ['integer', 'exists:subjects,id'],
+            'subjectYears' => ['nullable', 'array'],
+            'subjectYears.*' => ['integer', 'min:1'],
             'subjectSyllabus' => ['nullable', 'array'],
             'galleryFiles' => ['nullable', 'array'],
             'galleryFiles.*' => ['image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
@@ -252,7 +254,18 @@ class CourseController extends Controller
     private function syncNested(Course $course, array $data): void
     {
         if (array_key_exists('subjects', $data)) {
-            $course->subjects()->sync($data['subjects'] ?? []);
+            $ids = $data['subjects'] ?? [];
+            $years = $data['subjectYears'] ?? [];
+
+            // Sync with the study-year the subject belongs to. Subjects assigned
+            // before this feature (no year) default to Year 1.
+            $pivot = collect($ids)->mapWithKeys(function ($id) use ($years) {
+                $id = (int) $id;
+                $year = (int) ($years[(string) $id] ?? 1);
+                return [$id => ['year' => max(1, $year)]];
+            })->all();
+
+            $course->subjects()->sync($pivot);
         }
 
         if (isset($data['subjectSyllabus']) && is_array($data['subjectSyllabus'])) {

@@ -8,8 +8,8 @@ import {
 import {
   getCourseDetails,
 } from '@/admin/services/api'
-import type { AdmissionRequest, Course } from '@/admin/services/api'
-import { admissionsService } from '@/services/students.service'
+import type { AdmissionRequest, Course, Student } from '@/admin/services/api'
+import { admissionsService, studentsService } from '@/services/students.service'
 import { uploadService } from '@/services/gallery.service'
 import { coursesService } from '@/services/courses.service'
 import { useToast } from '@/admin/components/Toast'
@@ -42,13 +42,13 @@ interface ManualFormData {
   studentName: string; fatherName: string; motherName: string; dob: string
   gender: string; mobile: string; email: string; address: string
   courseId: string; batch: string; admissionDate: string
-  photo: string; aadhaarCard: string; matricDmc: string
+  photo: string; aadhaarCard: string; aadhaarNumber: string; matricDmc: string
 }
 
 const initialFormData: ManualFormData = {
   studentName: '', fatherName: '', motherName: '', dob: '', gender: '',
   mobile: '', email: '', address: '', courseId: '', batch: '', admissionDate: '',
-  photo: '', aadhaarCard: '', matricDmc: '',
+  photo: '', aadhaarCard: '', aadhaarNumber: '', matricDmc: '',
 }
 
 function FormInput({ icon: Icon, ...props }: { icon?: React.ComponentType<{ className?: string }> } & React.InputHTMLAttributes<HTMLInputElement>) {
@@ -188,6 +188,11 @@ function Admissions() {
     queryFn: () => admissionsService.list() as Promise<AdmissionRequest[]>,
   })
 
+  const { data: students = [] } = useQuery<Student[]>({
+    queryKey: ['students'],
+    queryFn: () => studentsService.list() as Promise<Student[]>,
+  })
+
   const coursesQuery = useQuery<Course[]>({
     queryKey: ['courses'],
     queryFn: () => coursesService.list() as Promise<Course[]>,
@@ -212,16 +217,53 @@ function Admissions() {
 
   const pendingCount = useMemo(() => admissions.filter((a) => a.status === 'Pending').length, [admissions])
 
+  const sessionShort = useMemo(() => {
+    const batch = formData.batch.trim()
+    const m4 = batch.match(/^(\d{4})-(\d{4})/)
+    if (m4) return `${m4[1].slice(2)}-${m4[2].slice(2)}`
+    const m42 = batch.match(/^(\d{4})-(\d{2})/)
+    if (m42) return `${m42[1].slice(2)}-${m42[2]}`
+    const m2 = batch.match(/^(\d{2})-(\d{2})/)
+    if (m2) return `${m2[1]}-${m2[2]}`
+    const year = new Date().getFullYear() % 100
+    return `${String(year).padStart(2, '0')}-${String(year + 1).padStart(2, '0')}`
+  }, [formData.batch])
+
   const regNo = useMemo(() => {
-    if (!selectedCourse || !formData.admissionDate) return '—'
-    const year = new Date(formData.admissionDate).getFullYear()
-    return `REG${year}${String(admissions.length + 1).padStart(3, '0')}`
-  }, [selectedCourse, formData.admissionDate, admissions.length])
+    const batch = formData.batch.trim()
+    if (!batch || !selectedCourse) return '—'
+    const sessionStudents = students.filter((s) => s.batch === batch).length
+    const sessionPending = admissions.filter((a) => a.batch === batch).length
+    const seq = sessionStudents + sessionPending + 1
+    return `REG-${sessionShort}-${String(seq).padStart(3, '0')}`
+  }, [selectedCourse, formData.batch, sessionShort, students, admissions])
 
   const rollNo = useMemo(() => {
     if (!selectedCourse) return '—'
     return `${selectedCourse.code}${String(admissions.length + 1).padStart(3, '0')}`
   }, [selectedCourse, admissions.length])
+
+  const enrollmentPreviewFor = useCallback((batch: string) => {
+    const b = batch.trim()
+    if (!b) return '—'
+    const m4 = b.match(/^(\d{4})-(\d{4})/)
+    const short = m4
+      ? `${m4[1].slice(2)}-${m4[2].slice(2)}`
+      : (b.match(/^(\d{4})-(\d{2})/)
+        ? `${b.match(/^(\d{4})-(\d{2})/)![1].slice(2)}-${b.match(/^(\d{4})-(\d{2})/)![2]}`
+        : (b.match(/^(\d{2})-(\d{2})/)
+          ? `${b.match(/^(\d{2})-(\d{2})/)![1]}-${b.match(/^(\d{2})-(\d{2})/)![2]}`
+          : (() => {
+            const year = new Date().getFullYear() % 100
+            return `${String(year).padStart(2, '0')}-${String(year + 1).padStart(2, '0')}`
+          })()
+        )
+      )
+    const seq = students.filter((s) => s.batch === b).length + admissions.filter((a) => a.batch === b).length + 1
+    return `ENR${short.replace('-', '')}-${String(seq).padStart(3, '0')}`
+  }, [students, admissions])
+
+  const enrollmentNo = useMemo(() => enrollmentPreviewFor(formData.batch), [enrollmentPreviewFor, formData.batch])
 
   const handleCourseChange = useCallback(async (courseId: string) => {
     try {
@@ -301,7 +343,7 @@ function Admissions() {
         dob: payload.dob, gender: payload.gender, mobile: payload.mobile, email: payload.email,
         address: payload.address, courseId: payload.courseId, batch: payload.batch,
         admissionDate: payload.admissionDate,
-        photo: payload.photo, aadhaarCard: payload.aadhaarCard, matricDmc: payload.matricDmc,
+        photo: payload.photo, aadhaarCard: payload.aadhaarCard, aadhaarNumber: payload.aadhaarNumber, matricDmc: payload.matricDmc,
       })
       toast('Student enrolled successfully')
       queryClient.invalidateQueries({ queryKey: ['admissions'] })
@@ -449,6 +491,10 @@ function Admissions() {
                 <div>
                   <label className={labelCls}>Email</label>
                   <FormInput icon={Mail} type="email" placeholder="Enter email address" value={formData.email} onChange={(e) => updateField('email', e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelCls}>Aadhaar Number <span className="text-gray-400 font-normal">(optional)</span></label>
+                  <FormInput icon={Hash} inputMode="numeric" placeholder="Enter 12-digit Aadhaar number" value={formData.aadhaarNumber} onChange={(e) => updateField('aadhaarNumber', e.target.value.replace(/\D/g, '').slice(0, 12))} />
                 </div>
                 <div className="md:col-span-2">
                   <label className={labelCls}>Address</label>
@@ -661,6 +707,14 @@ function Admissions() {
                   </div>
                   <p className="text-xs text-gray-400 mt-1">Auto-generated</p>
                 </div>
+                <div>
+                  <label className={labelCls}>Enrollment No</label>
+                  <div className="relative">
+                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input type="text" className="w-full pl-10 pr-3 py-2 text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg cursor-not-allowed" value={enrollmentNo} readOnly />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Auto-generated</p>
+                </div>
               </div>
             </div>
 
@@ -752,6 +806,10 @@ function Admissions() {
                   <p className="text-[11px] text-gray-500 font-medium">Mobile</p>
                   <p className="text-sm font-semibold text-text-dark mt-0.5">{selectedAdmission.mobile}</p>
                 </div>
+                <div>
+                  <p className="text-[11px] text-gray-500 font-medium">Aadhaar Number</p>
+                  <p className="text-sm font-semibold text-text-dark mt-0.5">{selectedAdmission.aadhaarNumber || '—'}</p>
+                </div>
               </div>
               <div className="mt-4">
                 <p className="text-[11px] text-gray-500 font-medium">Address</p>
@@ -774,6 +832,11 @@ function Admissions() {
                 <div>
                   <p className="text-[11px] text-gray-500 font-medium">Applied Date</p>
                   <p className="text-sm font-semibold text-text-dark mt-0.5">{new Date(selectedAdmission.appliedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-gray-500 font-medium">Enrollment No</p>
+                  <p className="text-sm font-semibold text-text-dark mt-0.5">{enrollmentPreviewFor(selectedAdmission.batch || '')}</p>
+                  <p className="text-[10px] text-gray-400 mt-0.5">Auto-generated on approval</p>
                 </div>
               </div>
             </div>

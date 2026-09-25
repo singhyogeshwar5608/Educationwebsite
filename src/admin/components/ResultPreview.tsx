@@ -139,6 +139,17 @@ const MARKS_TABLE_W = 1033
 const MARKS_TOTAL_TOP = 1207
 const MARKS_TOTAL_ROW_H = 46
 
+function getGrade(obtained: number, max: number): string {
+  const p = max > 0 ? (obtained / max) * 100 : 0
+  if (p >= 90) return 'A+'
+  if (p >= 80) return 'A'
+  if (p >= 70) return 'B+'
+  if (p >= 60) return 'B'
+  if (p >= 50) return 'C'
+  if (p >= 40) return 'D'
+  return 'F'
+}
+
 // Draw the marksheet onto a canvas: background + every field/table cell at exact
 // coordinates. Used by the PDF export — html2canvas is unreliable with absolute
 // positioned text and caused fields to shift/hide on download.
@@ -253,6 +264,8 @@ async function renderMarksheetToCanvas(
   text(365, 545, 364, 19, 'left', true, student?.motherName || '')
   text(890, 545, 260, 20, 'left', true, student?.batch || shortYear(result.publishedDate))
   text(365, 584, 596, 19, 'left', true, instituteName)
+  text(200, 1287, 596, 20, 'left', true, 'Pass')
+  text(260, 1287, 596, 20, 'left', true, 'Grade: ' + getGrade(calcTotalObt, calcTotalMax))
 
   // Student photo (if available)
   if (student?.photo) {
@@ -298,7 +311,7 @@ async function renderMarksheetToCanvas(
         cellText(
           colX,
           rowTop,
-          colW,
+          colW - (ci === 1 ? 20 : 0),
           MARKS_ROW_H,
           c.align,
           c.value,
@@ -471,6 +484,15 @@ function MarksheetContent({
       </span>
 
       <span style={abs(365, 584, 596, 19, 'left')}>{instituteName}</span>
+      <span style={abs(200, 1286, 596, 20, 'left')}>Pass</span>
+      <span style={abs(500 , 1288, 596, 18, 'left')}>
+        {': ' +
+          getGrade(
+            rows.reduce((s, r) => s + r.subjectTotal, 0),
+            rows.reduce((s, r) => s + r.maxMarks, 0),
+          )}
+      </span>
+
 
       {/* Student Photo (if available) */}
       {student?.photo && (
@@ -530,7 +552,7 @@ function MarksheetContent({
                 style={{
                   textAlign: 'left',
                   verticalAlign: 'middle',
-                  padding: '0 30px',
+                  padding: '0 20px 0 30px',
                   lineHeight: 1.1,
                   fontSize: '20px',
                   height: `${MARKS_ROW_H}px`,

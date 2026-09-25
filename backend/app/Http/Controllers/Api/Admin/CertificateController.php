@@ -85,7 +85,7 @@ class CertificateController extends Controller
     public function eligibleStudents(Request $request): JsonResponse
     {
         $query = Student::query()
-            ->with('course')
+            ->with(['course', 'results', 'certificates'])
             ->whereHas('results', fn ($q) => $q->whereIn('result_status', ['PASS', 'DISTINCTION']))
             ->whereDoesntHave('certificates');
 
@@ -95,24 +95,44 @@ class CertificateController extends Controller
                 ->orWhere('roll_number', 'like', "%{$request->search}%"));
         }
 
-        $students = $query->orderBy('name')->get()->map(function (Student $s) {
-            $result = $s->results()->latest('issue_date')->first();
+        $students = $query->orderBy('name')->get()
+            ->filter(function (Student $s) {
+                // Certificate is only issued after the FINAL year — every study
+                // year of the course must have a PASS result.
+                $courseYears = $s->course?->studyYears() ?? 1;
+                $passedYears = $s->results
+                    ->whereIn('result_status', ['PASS', 'DISTINCTION'])
+                    ->pluck('year')
+                    ->map(fn ($y) => (int) $y)
+                    ->all();
 
-            return [
-                'id' => (string) $s->id,
-                'name' => $s->name,
-                'course' => $s->course?->title,
-                'courseId' => $s->course_id ? (string) $s->course_id : null,
-                'rollNo' => $s->roll_number,
-                'registrationNo' => $s->registration_number,
-                'batch' => $s->batch,
-                'fatherName' => $s->father_name,
-                'motherName' => $s->mother_name,
-                'dob' => $s->date_of_birth?->toDateString(),
-                'percentage' => $result ? (float) $result->percentage : null,
-                'grade' => $result?->grade,
-            ];
-        });
+                for ($y = 1; $y <= $courseYears; $y++) {
+                    if (!in_array($y, $passedYears, true)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })
+            ->values()
+            ->map(function (Student $s) {
+                $result = $s->results->whereIn('result_status', ['PASS', 'DISTINCTION'])->sortByDesc('year')->first();
+
+                return [
+                    'id' => (string) $s->id,
+                    'name' => $s->name,
+                    'course' => $s->course?->title,
+                    'courseId' => $s->course_id ? (string) $s->course_id : null,
+                    'rollNo' => $s->roll_number,
+                    'registrationNo' => $s->registration_number,
+                    'batch' => $s->batch,
+                    'fatherName' => $s->father_name,
+                    'motherName' => $s->mother_name,
+                    'dob' => $s->date_of_birth?->toDateString(),
+                    'percentage' => $result ? (float) $result->percentage : null,
+                    'grade' => $result?->grade,
+                ];
+            });
 
         return response()->json($students);
     }

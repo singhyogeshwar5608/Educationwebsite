@@ -66,6 +66,7 @@ class Presenters
                 'name' => $subject->name,
                 'maxMarks' => $subject->max_marks,
                 'passingMarks' => $subject->passing_marks,
+                'year' => (int) ($subject->pivot?->year ?? 1),
                 'syllabusTopics' => $subject->syllabusTopics->map(fn ($t) => [
                     'id' => (string) $t->id,
                     'topic' => $t->topic,

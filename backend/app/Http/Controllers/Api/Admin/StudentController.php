@@ -7,6 +7,7 @@ use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\Result;
 use App\Models\Student;
+use App\Support\StudentNumbering;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -59,12 +60,13 @@ class StudentController extends Controller
             'status' => ['nullable', 'string', 'max:255'],
             'photo' => ['nullable', 'string'],
             'aadhaarCard' => ['nullable', 'string'],
+            'aadhaarNumber' => ['nullable', 'string', 'regex:/^[0-9]{12}$/'],
+            'enrollmentNumber' => ['nullable', 'string', 'max:30', Rule::unique('students', 'enrollment_number')],
             'matricDmc' => ['nullable', 'string'],
         ]);
 
         $course = Course::findOrFail($validated['courseId']);
-        $seq = str_pad((string) (Student::count() + 1), 3, '0', STR_PAD_LEFT);
-        $year = now()->year;
+        $batch = $validated['batch'] ?? now()->year . '-' . (now()->year + 1);
         $code = strtoupper($course->code ?: $course->slug ?: 'STU');
 
         $student = Student::create([
@@ -77,14 +79,16 @@ class StudentController extends Controller
             'email' => $validated['email'] ?? null,
             'address' => $validated['address'] ?? null,
             'course_id' => $validated['courseId'],
-            'batch' => $validated['batch'] ?? null,
+            'batch' => $batch,
             'admission_date' => $validated['admissionDate'] ?? now()->toDateString(),
             'status' => $validated['status'] ?? 'Active',
             'photo' => $validated['photo'] ?? null,
             'aadhaar_card' => $validated['aadhaarCard'] ?? null,
+            'aadhaar_number' => $validated['aadhaarNumber'] ?? null,
             'matric_dmc' => $validated['matricDmc'] ?? null,
-            'registration_number' => $request->registrationNo ?? "REG{$year}{$seq}",
-            'roll_number' => $request->rollNo ?? "{$code}{$seq}",
+            'registration_number' => $request->registrationNo ?? StudentNumbering::nextRegistrationNumber($batch),
+            'roll_number' => $request->rollNo ?? StudentNumbering::nextRollNumber($code),
+            'enrollment_number' => $request->enrollmentNumber ?? StudentNumbering::nextEnrollmentNumber($batch),
         ]);
 
         return response()->json($this->map($student->load(['course', 'results'])), 201);
@@ -114,6 +118,8 @@ class StudentController extends Controller
             'status' => ['nullable', 'string', 'max:255'],
             'photo' => ['nullable', 'string'],
             'aadhaarCard' => ['nullable', 'string'],
+            'aadhaarNumber' => ['nullable', 'string', 'regex:/^[0-9]{12}$/'],
+            'enrollmentNumber' => ['nullable', 'string', 'max:30', Rule::unique('students', 'enrollment_number')->ignore($student->id)],
             'matricDmc' => ['nullable', 'string'],
         ]);
 
@@ -132,6 +138,8 @@ class StudentController extends Controller
             'status' => $validated['status'] ?? $student->status,
             'photo' => $validated['photo'] ?? $student->photo,
             'aadhaar_card' => $validated['aadhaarCard'] ?? $student->aadhaar_card,
+            'aadhaar_number' => $validated['aadhaarNumber'] ?? $student->aadhaar_number,
+            'enrollment_number' => !empty($validated['enrollmentNumber']) ? $validated['enrollmentNumber'] : $student->enrollment_number,
             'matric_dmc' => $validated['matricDmc'] ?? $student->matric_dmc,
         ]);
 
@@ -167,10 +175,12 @@ class StudentController extends Controller
             'batch' => $student->batch,
             'admissionDate' => $student->admission_date?->toDateString(),
             'registrationNo' => $student->registration_number,
+            'enrollmentNo' => $student->enrollment_number,
             'rollNo' => $student->roll_number,
             'status' => $student->status,
             'photo' => $student->photo ? url('storage/' . ltrim($student->photo, '/')) : null,
             'aadhaarCard' => $student->aadhaar_card ? url('storage/' . ltrim($student->aadhaar_card, '/')) : null,
+            'aadhaarNumber' => $student->aadhaar_number,
             'matricDmc' => $student->matric_dmc ? url('storage/' . ltrim($student->matric_dmc, '/')) : null,
             'resultPublished' => $latestResult !== null,
             'passed' => $latestResult ? ($latestResult->result_status === 'PASS' || $latestResult->result_status === 'DISTINCTION') : null,

@@ -33,9 +33,9 @@ export interface Student {
   id: string; name: string; fatherName: string; motherName: string;
   dob: string; gender: 'Male' | 'Female'; mobile: string; email: string;
   address: string; course: string; courseId: string; batch: string;
-  admissionDate: string; registrationNo: string; rollNo: string;
+  admissionDate: string; registrationNo: string; enrollmentNo?: string; rollNo: string;
   status: 'Active' | 'Inactive' | 'Graduated';
-  photo?: string; aadhaarCard?: string; matricDmc?: string;
+  photo?: string; aadhaarCard?: string; aadhaarNumber?: string; matricDmc?: string;
   resultPublished?: boolean; passed?: boolean;
   certificateIssued?: boolean; percentage?: number; grade?: string;
   results?: StudentResult | null;
@@ -80,12 +80,12 @@ export interface AdmissionRequest {
   status: 'Pending' | 'Approved' | 'Rejected';
   fatherName: string; motherName?: string | null; dob: string; gender?: string | null;
   address: string; batch?: string | null;
-  photo?: string; aadhaarCard?: string; matricDmc?: string;
+  photo?: string; aadhaarCard?: string; aadhaarNumber?: string; matricDmc?: string;
 }
 
 export interface Result {
   id: string; studentId: string; studentName: string; course: string;
-  rollNo?: string;
+  rollNo?: string; year?: number;
   subjects: { name: string; marks: number; maxMarks: number; passingMarks: number; theoryMaxMarks?: number; theoryMarks?: number; practicalMaxMarks?: number; practicalMarks?: number }[];
   total: number; maxTotal: number; percentage: number;
   grade: string; pass: boolean; publishedDate: string;
@@ -148,7 +148,7 @@ export const updateEnquiryStatus = (id: number, status: string) =>
 export const getGallery = (params?: any) => galleryService.list(params);
 
 export const calculateGrade = (percentage: number): { grade: string; pass: boolean } => {
-  const grade: string = percentage >= 75 ? 'A+' : percentage >= 60 ? 'A' : percentage >= 50 ? 'B' : percentage >= 40 ? 'C' : percentage >= 33 ? 'D' : 'F';
+  const grade: string = percentage >= 90 ? 'A+' : percentage >= 80 ? 'A' : percentage >= 70 ? 'B+' : percentage >= 60 ? 'B' : percentage >= 50 ? 'C' : percentage >= 40 ? 'D' : 'F';
   const pass = percentage >= 33;
   return { grade, pass };
 };

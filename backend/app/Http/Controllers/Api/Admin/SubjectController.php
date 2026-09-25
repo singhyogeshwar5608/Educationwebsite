@@ -17,7 +17,7 @@ class SubjectController extends Controller
             $query->whereHas('courses', fn ($q) => $q->where('courses.id', $request->course_id));
         }
 
-        $subjects = $query->orderBy('name')->get()->map(fn ($subject) => $this->map($subject));
+        $subjects = $query->orderBy('name')->get()->map(fn ($subject) => $this->map($subject, $request->filled('course_id') ? (string) $request->course_id : null));
 
         return response()->json($subjects);
     }
@@ -75,8 +75,14 @@ class SubjectController extends Controller
         return response()->json(['message' => 'Subject deleted successfully']);
     }
 
-    private function map(Subject $subject): array
+    private function map(Subject $subject, ?string $courseId = null): array
     {
+        $courseYears = null;
+        if ($courseId) {
+            $course = $subject->courses->firstWhere('id', $courseId);
+            $courseYears = $course ? $course->pivot?->year : null;
+        }
+
         return [
             'id' => (string) $subject->id,
             'name' => $subject->name,
@@ -91,6 +97,7 @@ class SubjectController extends Controller
             ])->values(),
             'maxMarks' => $subject->max_marks,
             'passingMarks' => $subject->passing_marks,
+            'year' => $courseYears !== null ? (int) $courseYears : null,
         ];
     }
 }

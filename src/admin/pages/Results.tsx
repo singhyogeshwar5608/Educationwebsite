@@ -22,6 +22,7 @@ const ITEMS_PER_PAGE = 8
 interface AvailableStudent {
   id: string; name: string; course: string | null; courseId: string | null;
   rollNo: string | null; registrationNo: string | null; batch: string | null;
+  courseYears?: number | null; pendingYear?: number | null;
 }
 
 function getGradeBadgeClass(grade: string): string {
@@ -30,6 +31,23 @@ function getGradeBadgeClass(grade: string): string {
   if (grade === 'C' || grade === 'D') return 'badge-warning'
   if (grade === 'F') return 'badge-danger'
   return 'badge-info'
+}
+
+function resultGrade(r: Result): string {
+  let total = 0
+  let max = 0
+  for (const sub of r.subjects ?? []) {
+    total += (sub as any).marks ?? 0
+    max += sub.maxMarks ?? 100
+  }
+  const p = max > 0 ? (total / max) * 100 : 0
+  if (p >= 90) return 'A+'
+  if (p >= 80) return 'A'
+  if (p >= 70) return 'B+'
+  if (p >= 60) return 'B'
+  if (p >= 50) return 'C'
+  if (p >= 40) return 'D'
+  return 'F'
 }
 
 function StepIndicator({ currentStep }: { currentStep: number; totalSteps: number }) {
@@ -68,6 +86,7 @@ function Results() {
   const [deleting, setDeleting] = useState(false)
   const [genStep, setGenStep] = useState(1)
   const [selectedStudent, setSelectedStudent] = useState<AvailableStudent | null>(null)
+  const [resultYear, setResultYear] = useState(1)
   const [studentSearch, setStudentSearch] = useState('')
   const [courseFilter, setCourseFilter] = useState('')
   const [subjectMarks, setSubjectMarks] = useState<Record<string, { theory: number; practical: number; practicalMax: number }>>({})
@@ -101,6 +120,23 @@ function Results() {
   })
   const courseSubjects = Array.isArray(courseSubjectsQuery.data) ? courseSubjectsQuery.data : []
 
+  // Only the selected study-year's subjects count toward that year's result.
+  const yearSubjects = useMemo(() =>
+    courseSubjects.filter((s) => Number(s.year ?? 1) === resultYear),
+    [courseSubjects, resultYear]
+  )
+
+  // Year-wise overview of every subject in the course (read-only grouping).
+  const yearGroups = useMemo(() => {
+    const map = new Map<number, typeof courseSubjects>()
+    courseSubjects.forEach((s) => {
+      const y = Number(s.year ?? 1)
+      if (!map.has(y)) map.set(y, [])
+      map.get(y)!.push(s)
+    })
+    return Array.from(map.entries()).sort((a, b) => a[0] - b[0])
+  }, [courseSubjects])
+
   const courseDetailsQuery = useQuery({
     queryKey: ['course-details', selectedStudent?.courseId],
     queryFn: () => getCourseDetails(String(selectedStudent?.courseId)),
@@ -111,7 +147,7 @@ function Results() {
   const filteredResults = useMemo(() => {
     const q = search.toLowerCase()
     return results.filter((r) =>
-      (!q || r.studentName.toLowerCase().includes(q) || r.course.toLowerCase().includes(q) || r.grade.toLowerCase().includes(q)) &&
+      (!q || r.studentName.toLowerCase().includes(q) || r.course.toLowerCase().includes(q) || resultGrade(r).toLowerCase().includes(q)) &&
       (!pubCourseFilter || r.course === pubCourseFilter)
     )
   }, [search, results, pubCourseFilter])
@@ -125,8 +161,8 @@ function Results() {
   }, [availableStudentsData, studentSearch])
 
   const calculations = useMemo(() => {
-    if (!courseSubjects.length) return null
-    const entries = courseSubjects.map((sub) => {
+    if (!yearSubjects.length) return null
+    const entries = yearSubjects.map((sub) => {
       const m = subjectMarks[sub.id] ?? { theory: 0, practical: 0, practicalMax: 0 }
       const theoryObt = m.theory
       const practicalObt = m.practical
@@ -141,7 +177,7 @@ function Results() {
     const failedCount = subRes.filter((s) => !s.passed).length
     const pass = failedCount < 3
     return { total, maxTotal: max, percentage: pct, grade, pass, failedCount, subjectResults: subRes, marksEntries: entries }
-  }, [courseSubjects, subjectMarks])
+  }, [yearSubjects, subjectMarks])
 
   function handleMarksChange(id: string, field: 'theory' | 'practical' | 'practicalMax', value: string, maxM: number) {
     let n = parseInt(value, 10); if (isNaN(n)) n = 0; if (n < 0) n = 0; if (n > maxM) n = maxM
@@ -165,6 +201,7 @@ function Results() {
     setSubmitting(true)
     const payload = {
       studentId: Number(selectedStudent.id),
+      year: resultYear,
       subjects: calculations.marksEntries.map((e) => ({
         name: e.name, marks: e.subjectTotal, maxMarks: e.maxMarks, passingMarks: e.passingMarks,
         theoryMaxMarks: e.theoryMax, theoryMarks: e.theoryObt,
@@ -267,9 +304,10 @@ function Results() {
                   columns={[
                     { key: 'name', header: 'Student Name', render: (r) => <span className="text-[12px] font-semibold text-gray-900">{r.studentName}</span> },
                     { key: 'course', header: 'Course', render: (r) => <span className="text-gray-700">{r.course}</span> },
+                    { key: 'year', header: 'Year', render: (r) => <span className="text-gray-600">Year {r.year ?? 1}</span> },
                     { key: 'total', header: 'Total', render: (r) => <span className="text-gray-700">{r.total}/{r.maxTotal}</span> },
                     { key: 'pct', header: '%', render: (r) => <span className="text-gray-700">{r.percentage.toFixed(1)}%</span> },
-                    { key: 'grade', header: 'Grade', render: (r) => <span className={getGradeBadgeClass(r.grade)}>{r.grade}</span> },
+                    { key: 'grade', header: 'Grade', render: (r) => <span className={getGradeBadgeClass(resultGrade(r))}>{resultGrade(r)}</span> },
                     { key: 'pass', header: 'Pass/Fail', render: (r) => r.pass ? <span className="badge-success">Pass</span> : <span className="badge-danger">Fail</span> },
                     { key: 'date', header: 'Date', render: (r) => <span className="text-gray-600">{r.publishedDate}</span> },
                     {
@@ -324,16 +362,17 @@ function Results() {
                   ) : availableStudents.map((s) => {
                     const sel = selectedStudent?.id === s.id
                     return (
-                      <button key={s.id} className={`w-full text-left flex items-center gap-2.5 px-3 py-2 border ${sel ? 'bg-[#E3F2FD] border-[#0078D7]' : 'border-gray-200 hover:bg-gray-50'}`} onClick={() => { setSelectedStudent(s); setSubjectMarks({}) }}>
+                      <button key={s.id} className={`w-full text-left flex items-center gap-2.5 px-3 py-2 border ${sel ? 'bg-[#E3F2FD] border-[#0078D7]' : 'border-gray-200 hover:bg-gray-50'}`} onClick={() => { setSelectedStudent(s); setResultYear(s.pendingYear ?? 1); setSubjectMarks({}) }}>
                         <div className="w-8 h-8 flex items-center justify-center border border-gray-300 text-[10px] font-bold text-[#222222] bg-gray-100 shrink-0">{s.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}</div>
                         <div className="flex-1 min-w-0"><p className="text-xs font-semibold text-[#222222]">{s.name}</p><p className="text-[10px] text-gray-500">{s.course} • Roll: {s.rollNo}</p></div>
+                        <span className="shrink-0 text-[10px] font-bold text-[#0078D7] bg-[#E3F2FD] border border-[#90CAF9] px-2 py-0.5">Year {s.pendingYear ?? 1}</span>
                         {sel && <CheckCircle2 className="w-4 h-4 text-[#0078D7]" />}
                       </button>
                     )
                   })}
                 </div>
                 {selectedStudent && (
-                  <Card padding="sm" className="border border-gray-300"><p className="text-[10px] font-bold text-[#222222] mb-1">Selected Student</p><div className="grid grid-cols-3 gap-2 text-[11px]"><div><span className="text-gray-500">Name:</span> {selectedStudent.name}</div><div><span className="text-gray-500">Course:</span> {selectedStudent.course}</div><div><span className="text-gray-500">Roll:</span> {selectedStudent.rollNo}</div></div></Card>
+                  <Card padding="sm" className="border border-gray-300"><p className="text-[10px] font-bold text-[#222222] mb-1">Selected Student</p><div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]"><div><span className="text-gray-500">Name:</span> {selectedStudent.name}</div><div><span className="text-gray-500">Course:</span> {selectedStudent.course}</div><div><span className="text-gray-500">Roll:</span> {selectedStudent.rollNo}</div><div><span className="text-gray-500">Result Year:</span> Year {resultYear}</div></div></Card>
                 )}
                 <div className="flex justify-end">
                   <button className="px-3 py-1.5 text-[11px] text-white bg-[#0078D7] border border-[#005A9E] hover:bg-[#006CC1] flex items-center gap-1.5 disabled:opacity-50" disabled={!selectedStudent} onClick={() => setGenStep(2)}>Next: Enter Marks <ChevronRight className="w-3 h-3" /></button>
@@ -345,8 +384,33 @@ function Results() {
           {genStep === 2 && selectedStudent && (
             <Panel title="Course & Subjects">
               <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] font-bold text-gray-600 shrink-0">Result for Year:</label>
+                  <select
+                    className="form-select w-44"
+                    value={resultYear}
+                    onChange={(e) => { setResultYear(Number(e.target.value)); setSubjectMarks({}) }}
+                  >
+                    {selectedStudent.courseYears && Array.from({ length: selectedStudent.courseYears }, (_, i) => i + 1)
+                      .filter((y) => y === (selectedStudent.pendingYear ?? 1))
+                      .map((y) => <option key={y} value={y}>Year {y}</option>)}
+                    {!selectedStudent.courseYears && <option value={resultYear}>Year {resultYear}</option>}
+                  </select>
+                  <span className="text-[10px] text-gray-400">Years are generated in order — Year {selectedStudent.pendingYear ?? 1} is next.</span>
+                </div>
                 {courseDetails && (
-                  <Card padding="sm" className="border border-gray-300"><p className="text-[10px] font-bold text-[#222222] mb-1">Course Information</p><div className="grid grid-cols-3 gap-2 text-[11px]"><div><span className="text-gray-500">Course:</span> {courseDetails.name}</div><div><span className="text-gray-500">Duration:</span> {courseDetails.duration}</div><div><span className="text-gray-500">Subjects:</span> {courseSubjects.length}</div></div></Card>
+                  <Card padding="sm" className="border border-gray-300"><p className="text-[10px] font-bold text-[#222222] mb-1">Course Information</p><div className="grid grid-cols-3 gap-2 text-[11px]"><div><span className="text-gray-500">Course:</span> {courseDetails.name}</div><div><span className="text-gray-500">Duration:</span> {courseDetails.duration}</div><div><span className="text-gray-500">Subjects:</span> {yearSubjects.length} in Year {resultYear} (of {courseSubjects.length})</div></div></Card>
+                )}
+                {yearGroups.length > 0 && (
+                  <div className="flex flex-col gap-1 rounded-lg border border-gray-200 bg-gray-50 p-2.5">
+                    {yearGroups.map(([y, subs]) => (
+                      <div key={y} className="text-[11px] text-gray-700">
+                        <span className={`font-bold mr-1.5 ${y === resultYear ? 'text-[#0078D7]' : 'text-gray-400'}`}>Year {y}:</span>
+                        {subs.map((s) => s.name).join(', ')}
+                        {y === resultYear && <span className="ml-1.5 text-[9px] font-bold text-[#0078D7] bg-[#E3F2FD] border border-[#90CAF9] px-1.5 py-0.5 rounded">ENTERING MARKS</span>}
+                      </div>
+                    ))}
+                  </div>
                 )}
                 {courseSubjectsQuery.isLoading ? (
                   <div className="flex flex-col items-center py-8 text-gray-400"><Loader2 className="w-6 h-6 mb-2 animate-spin" /><p className="text-xs font-medium">Loading subjects...</p></div>
@@ -367,7 +431,7 @@ function Results() {
                       <th className="px-2 py-1.5 text-center font-bold">Status</th>
                     </tr></thead>
                     <tbody>
-                      {courseSubjects.map((sub, idx) => {
+                      {yearSubjects.map((sub, idx) => {
                         const m = subjectMarks[sub.id] ?? { theory: 0, practical: 0, practicalMax: 0 }
                         const has = sub.id in subjectMarks
                         const total = m.theory + m.practical
@@ -397,13 +461,13 @@ function Results() {
                       <div><span className="text-gray-500">%:</span> <strong>{calculations.percentage.toFixed(1)}%</strong></div>
                       <div><span className="text-gray-500">Grade:</span> <strong>{calculations.grade}</strong></div>
                       <div><span className="text-gray-500">Status:</span> {calculations.pass ? <span className="badge-success">Pass</span> : <span className="badge-danger">Fail</span>}</div>
-                      <div><span className="text-gray-500">Subjects:</span> <strong>{calculations.subjectResults.filter(s => s.passed).length}/{courseSubjects.length}</strong> <span className={`ml-1 ${calculations.failedCount > 0 ? 'text-[#C62828]' : 'text-gray-400'}`}>({calculations.failedCount} fail)</span></div>
+                      <div><span className="text-gray-500">Subjects:</span> <strong>{calculations.subjectResults.filter(s => s.passed).length}/{yearSubjects.length}</strong> <span className={`ml-1 ${calculations.failedCount > 0 ? 'text-[#C62828]' : 'text-gray-400'}`}>({calculations.failedCount} fail)</span></div>
                     </div>
                   </Card>
                 )}
                 <div className="flex justify-between">
                   <button className="px-3 py-1.5 text-[11px] bg-[#E1E1E1] border border-[#B0B0B0] border-t-[#F5F5F5] border-l-[#F5F5F5] hover:bg-[#E8E8E8] text-[#222222] flex items-center gap-1" onClick={() => setGenStep(1)}><ChevronLeft className="w-3 h-3" /> Previous</button>
-                  <button className="px-3 py-1.5 text-[11px] text-white bg-[#0078D7] border border-[#005A9E] hover:bg-[#006CC1] flex items-center gap-1.5 disabled:opacity-50" disabled={Object.keys(subjectMarks).length < courseSubjects.length} onClick={() => setGenStep(3)}>Next: Review <ChevronRight className="w-3 h-3" /></button>
+                  <button className="px-3 py-1.5 text-[11px] text-white bg-[#0078D7] border border-[#005A9E] hover:bg-[#006CC1] flex items-center gap-1.5 disabled:opacity-50" disabled={Object.keys(subjectMarks).length < yearSubjects.length} onClick={() => setGenStep(3)}>Next: Review <ChevronRight className="w-3 h-3" /></button>
                 </div>
               </div>
             </Panel>
@@ -419,6 +483,7 @@ function Results() {
                       <div className="flex justify-between"><span className="text-gray-500">Course</span><span className="font-semibold text-[#222222]">{selectedStudent.course}</span></div>
                       <div className="flex justify-between"><span className="text-gray-500">Roll</span><span className="font-semibold text-[#222222]">{selectedStudent.rollNo}</span></div>
                       <div className="flex justify-between"><span className="text-gray-500">Reg No</span><span className="font-semibold text-[#222222]">{selectedStudent.registrationNo}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Result Year</span><span className="font-semibold text-[#0078D7]">Year {resultYear}</span></div>
                     </div>
                   </Card>
                   <Card padding="sm" className={`border ${calculations.pass ? 'border-[#A5D6A7] bg-[#E8F5E9]' : 'border-[#EF9A9A] bg-[#FFEBEE]'}`}>

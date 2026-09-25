@@ -11,7 +11,7 @@ class Result extends Model
 {
     protected $fillable = [
         'grade', 'percentage', 'total_max_marks', 'total_obtained_marks',
-        'result_status', 'certificate_no', 'issue_date', 'student_id', 'course_id',
+        'result_status', 'certificate_no', 'issue_date', 'student_id', 'course_id', 'year',
     ];
 
     protected $casts = ['issue_date' => 'date'];

@@ -183,7 +183,7 @@ function Students() {
 
   const emptyForm = {
     name: '', fatherName: '', motherName: '', dob: '', gender: '' as '' | 'Male' | 'Female',
-    mobile: '', email: '', address: '', courseId: '', batch: '', admissionDate: '', photo: '', aadhaarCard: '', matricDmc: '',
+    mobile: '', email: '', address: '', courseId: '', batch: '', admissionDate: '', photo: '', aadhaarCard: '', aadhaarNumber: '', matricDmc: '', enrollmentNumber: '',
   }
   const [form, setForm] = useState(emptyForm)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
@@ -280,7 +280,7 @@ function Students() {
       name: s.name, fatherName: s.fatherName || '', motherName: s.motherName || '', dob: s.dob || '',
       gender: s.gender || '', mobile: s.mobile || '', email: s.email || '', address: s.address || '',
       courseId: s.courseId || '', batch: s.batch || '', admissionDate: s.admissionDate || '',
-      photo: s.photo || '', aadhaarCard: s.aadhaarCard || '', matricDmc: s.matricDmc || '',
+      photo: s.photo || '', aadhaarCard: s.aadhaarCard || '', aadhaarNumber: s.aadhaarNumber || '', matricDmc: s.matricDmc || '', enrollmentNumber: s.enrollmentNo || '',
     })
     setPhotoFile(null)
     setPhotoPreview(s.photo || '')
@@ -663,6 +663,11 @@ function Students() {
                 <input type="tel" className={inputCls} placeholder="Enter mobile" value={form.mobile} onChange={(e) => handleFormChange('mobile', e.target.value)} />
                 <FieldError message={formErrors.mobile} />
               </div>
+              <div>
+                <label className={labelCls}>Aadhaar Number <span className="text-gray-400 font-normal">(optional)</span></label>
+                <input type="tel" inputMode="numeric" maxLength={12} className={inputCls} placeholder="Enter 12-digit Aadhaar number" value={form.aadhaarNumber} onChange={(e) => handleFormChange('aadhaarNumber', e.target.value.replace(/\D/g, '').slice(0, 12))} />
+                <FieldError message={formErrors.aadhaarNumber} />
+              </div>
             </div>
 
             {/* Student Photo */}
@@ -892,6 +897,10 @@ function Students() {
                 <label className={labelCls}>Roll No</label>
                 <input type="text" className={`${inputCls} bg-gray-50 text-gray-400 cursor-not-allowed`} value={editingStudent?.rollNo || 'Auto-generated'} disabled />
               </div>
+              <div>
+                <label className={labelCls}>Enrollment No</label>
+                <input type="text" className={inputCls} placeholder="Auto-generated" value={form.enrollmentNumber} onChange={(e) => handleFormChange('enrollmentNumber', e.target.value)} />
+              </div>
             </div>
           </div>
         </div>
@@ -959,6 +968,10 @@ function Students() {
                   <p className="text-[11px] text-gray-500 font-medium">Email</p>
                   <p className="text-sm font-semibold text-text-dark mt-0.5 break-all">{viewStudent.email || '—'}</p>
                 </div>
+                <div>
+                  <p className="text-[11px] text-gray-500 font-medium">Aadhaar Number</p>
+                  <p className="text-sm font-semibold text-text-dark mt-0.5">{viewStudent.aadhaarNumber || '—'}</p>
+                </div>
                 <div className="col-span-2">
                   <p className="text-[11px] text-gray-500 font-medium">Address</p>
                   <p className="text-sm font-semibold text-text-dark mt-0.5">{viewStudent.address || '—'}</p>
@@ -989,6 +1002,10 @@ function Students() {
                 <div>
                   <p className="text-[11px] text-gray-500 font-medium">Roll No</p>
                   <p className="text-sm font-semibold text-text-dark mt-0.5">{viewStudent.rollNo}</p>
+                </div>
+                <div>
+                  <p className="text-[11px] text-gray-500 font-medium">Enrollment No</p>
+                  <p className="text-sm font-semibold text-text-dark mt-0.5">{viewStudent.enrollmentNo || '—'}</p>
                 </div>
                 <div className="flex items-end gap-2 flex-wrap">
                   {viewStudent.resultPublished && <span className="badge-success">Result Published</span>}

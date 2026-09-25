@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useForm, Controller, useController } from 'react-hook-form'
+import { useForm, Controller, useController, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
@@ -44,6 +44,7 @@ function StatusBadge({ status }: { status: Course['status'] }) {
 
 interface TopicRow { topic: string; description: string }
 type SubjectSyllabusMap = Record<string, TopicRow[]>
+type SubjectYearMap = Record<string, number>
 
 interface CourseFormValues {
   name: string
@@ -58,6 +59,7 @@ interface CourseFormValues {
   description: string
   featured: boolean
   subjectIds: string[]
+  subjectYears: SubjectYearMap
   subjectSyllabus: SubjectSyllabusMap
 }
 
@@ -74,6 +76,7 @@ const courseSchema = z.object({
   description: z.string().optional(),
   featured: z.boolean().optional(),
   subjectIds: z.array(z.string()).optional(),
+  subjectYears: z.record(z.string(), z.number().min(1)).optional(),
   subjectSyllabus: z.record(z.string(), z.array(z.object({ topic: z.string(), description: z.string() }))).optional(),
 })
 
@@ -82,7 +85,16 @@ type CourseFormValues_ = z.infer<typeof courseSchema>
 const defaultValues: CourseFormValues_ = {
   name: '', code: '', subtitle: '', categoryId: '', duration: '', courseFee: '', registrationFee: '',
   level: 'Beginner', eligibility: '', description: '', featured: false, subjectIds: [],
+  subjectYears: {},
   subjectSyllabus: {},
+}
+
+// Number of study-years a course has, derived from its duration text (e.g.
+// "3 Years" → 3, "2 Year(s)" → 2, "6 Months" → 1). Over-approximates ("2.5 Years" → 3).
+function yearsFromDuration(duration: string): number {
+  const match = String(duration || '').trim().match(/(\d+(?:\.\d+)?)\s*(year|yr)/i)
+  if (!match) return 1
+  return Math.max(1, Math.ceil(parseFloat(match[1])))
 }
 
 // ─── Course code auto-generation ─────────────────────
@@ -120,6 +132,9 @@ function uniqueCourseCode(name: string, existingCodes: string[]): string {
 function SubjectSyllabusEditor({ control }: { control: any }) {
   const subjectIds = useController({ control, name: 'subjectIds' })
   const syllabus = useController({ control, name: 'subjectSyllabus' })
+  const subjectYears = useController({ control, name: 'subjectYears' })
+  const watchDuration = useWatch({ control, name: 'duration' })
+  const maxYears = yearsFromDuration(watchDuration)
 
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -171,8 +186,13 @@ function SubjectSyllabusEditor({ control }: { control: any }) {
 
   const selectedIds: string[] = subjectIds.field.value ?? []
   const record: SubjectSyllabusMap = syllabus.field.value ?? {}
+  const yearMap: SubjectYearMap = subjectYears.field.value ?? {}
   const selectedSubjects = subjects.filter((s) => selectedIds.includes(String(s.id)))
   const filtered = subjects.filter((s) => s.name.toLowerCase().includes(search.trim().toLowerCase()))
+
+  const setSubjectYear = (id: string, year: number) => {
+    subjectYears.field.onChange({ ...yearMap, [id]: Math.min(Math.max(1, year), Math.max(maxYears, 1)) })
+  }
 
   const toggleSubject = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -181,8 +201,12 @@ function SubjectSyllabusEditor({ control }: { control: any }) {
       const next = { ...record }
       delete next[id]
       syllabus.field.onChange(next)
+      const nextYears = { ...yearMap }
+      delete nextYears[id]
+      subjectYears.field.onChange(nextYears)
     } else {
       subjectIds.field.onChange([...selectedIds, id])
+      setSubjectYear(id, yearMap[id] ?? 1)
       if (!(id in record)) {
         const subj = subjects.find((s) => String(s.id) === id)
         const prefill = (subj?.syllabusTopics || []).map((t: any) => ({ topic: t.topic, description: t.description || '' }))
@@ -333,7 +357,20 @@ function SubjectSyllabusEditor({ control }: { control: any }) {
                 <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${active ? 'bg-gold text-navy' : 'bg-navy/10 text-navy'}`}>
                   <BookOpen className="w-3.5 h-3.5" />
                 </span>
-                <span className="max-w-[140px] truncate">{s.name}</span>
+                <span className="max-w-[130px] truncate">{s.name}</span>
+                <select
+                  value={yearMap[id] ?? 1}
+                  onChange={(e) => { e.stopPropagation(); setSubjectYear(id, Number(e.target.value)) }}
+                  onClick={(e) => e.stopPropagation()}
+                  title="Study year"
+                  className={`shrink-0 cursor-pointer rounded-md border py-0.5 pl-1.5 pr-1 text-[11px] font-semibold outline-none ${
+                    active ? 'bg-white/15 text-white border-white/25' : 'bg-navy/5 text-navy border-navy/15'
+                  }`}
+                >
+                  {Array.from({ length: maxYears }, (_, i) => i + 1).map((y) => (
+                    <option key={y} value={y} className="text-navy">{y} Year</option>
+                  ))}
+                </select>
                 <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full ${active ? 'bg-white/20 text-white' : 'bg-navy/5 text-navy-light'}`}>
                   {count} topic{count === 1 ? '' : 's'}
                 </span>
@@ -705,6 +742,10 @@ function Courses() {
         description: course.description || '',
         featured: Boolean(course.featured),
         subjectIds: (course.subjects || []).map((s: any) => String(s.id)),
+        subjectYears: (course.subjects || []).reduce((acc: SubjectYearMap, s: any) => {
+          acc[String(s.id)] = Number(s.year ?? 1)
+          return acc
+        }, {}),
         subjectSyllabus: (full.subjects || []).reduce((acc: Record<string, TopicRow[]>, s: any) => {
           acc[String(s.id)] = (s.syllabusTopics || []).map((t: any) => ({ topic: t.topic, description: t.description || '' }))
           return acc
@@ -750,6 +791,7 @@ function Courses() {
     fd.append('eligibility', JSON.stringify(values.eligibility ? [values.eligibility] : []))
     fd.append('featured', values.featured ? '1' : '0')
     ;(values.subjectIds || []).forEach((id) => fd.append('subjects[]', String(id)))
+    fd.append('subjectYears', JSON.stringify(values.subjectYears || {}))
     fd.append('subjectSyllabus', JSON.stringify(subjectSyllabus))
     galleryFiles.forEach((f) => fd.append('galleryFiles[]', f))
     galleryCaptions.forEach((c) => fd.append('galleryCaptions[]', c))

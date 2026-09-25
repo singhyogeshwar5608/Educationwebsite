@@ -50,9 +50,24 @@ class ResultController extends Controller
             'grade' => ['nullable', 'string', 'max:10'],
             'pass' => ['nullable', 'boolean'],
             'publishedDate' => ['nullable', 'date'],
+            'year' => ['nullable', 'integer', 'min:1'],
         ]);
 
         $student = Student::with('course')->findOrFail($validated['studentId']);
+
+        // Year-wise results are strictly sequential — a year's result can only be
+        // generated after every earlier study year's result exists.
+        $pendingYear = $this->pendingYear($student);
+        if ($pendingYear === null) {
+            return response()->json(['message' => 'All study years of this course already have results.'], 422);
+        }
+
+        $year = (int) ($validated['year'] ?? $pendingYear);
+        if ($year !== $pendingYear) {
+            return response()->json([
+                'message' => "Only Year {$pendingYear} result can be generated right now — complete earlier years first.",
+            ], 422);
+        }
 
         $percentage = $validated['percentage'] ?? $this->calculatePercentage($validated['subjects']);
         $failedCount = count(array_filter($validated['subjects'], fn ($s) => ($s['marks'] ?? 0) < ($s['passingMarks'] ?? 33)));
@@ -64,6 +79,7 @@ class ResultController extends Controller
         $result = Result::create([
             'student_id' => $student->id,
             'course_id' => $student->course_id,
+            'year' => $year,
             'total_obtained_marks' => $validated['total'] ?? $this->sumMarks($validated['subjects']),
             'total_max_marks' => $validated['maxTotal'] ?? $this->sumMax($validated['subjects']),
             'percentage' => round($percentage, 2),
@@ -108,9 +124,6 @@ class ResultController extends Controller
 
         if ($request->filled('course_id')) {
             $query->where('course_id', $request->course_id);
-            $query->whereDoesntHave('results', fn ($q) => $q->where('course_id', $request->course_id));
-        } else {
-            $query->whereDoesntHave('results');
         }
 
         if ($request->filled('search')) {
@@ -119,7 +132,25 @@ class ResultController extends Controller
                 ->orWhere('roll_number', 'like', "%{$request->search}%"));
         }
 
-        $students = $query->orderBy('name')->get()->map(function (Student $s) {
+        $students = $query->orderBy('name')->get();
+
+        // Map every student to the study-years they already have a result for.
+        $doneMap = Result::query()
+            ->whereIn('student_id', $students->pluck('id'))
+            ->selectRaw('student_id, year, COUNT(*) as cnt')
+            ->groupBy('student_id', 'year')
+            ->get()
+            ->groupBy('student_id')
+            ->map(fn ($g) => $g->pluck('year')->map(fn ($y) => (int) $y)->all());
+
+        $students = $students->map(function (Student $s) use ($doneMap) {
+            $pendingYear = $this->pendingYear($s, $doneMap[$s->id] ?? []);
+
+            // Fully completed courses (every study year has a result) drop out.
+            if ($pendingYear === null) {
+                return null;
+            }
+
             return [
                 'id' => (string) $s->id,
                 'name' => $s->name,
@@ -128,10 +159,30 @@ class ResultController extends Controller
                 'rollNo' => $s->roll_number,
                 'registrationNo' => $s->registration_number,
                 'batch' => $s->batch,
+                'courseYears' => $s->course?->studyYears() ?? 1,
+                'pendingYear' => $pendingYear,
             ];
-        });
+        })->filter()->values();
 
         return response()->json($students);
+    }
+
+    /**
+     * First study-year (1..courseYears) that has no result yet, or null when
+     * all study years are done. Assumes $doneYears already reflects the student.
+     */
+    private function pendingYear(Student $student, ?array $doneYears = null): ?int
+    {
+        $courseYears = $student->course?->studyYears() ?? 1;
+        $done = $doneYears ?? $student->results()->pluck('year')->map(fn ($y) => (int) $y)->all();
+
+        for ($y = 1; $y <= $courseYears; $y++) {
+            if (!in_array($y, $done, true)) {
+                return $y;
+            }
+        }
+
+        return null;
     }
 
     private function map(Result $result): array
@@ -143,6 +194,7 @@ class ResultController extends Controller
             'course' => $result->course?->title ?? $result->student?->course?->title,
             'courseId' => $result->course_id ? (string) $result->course_id : null,
             'rollNo' => $result->student?->roll_number,
+            'year' => (int) $result->year,
             'subjects' => $result->subjectMarks->map(fn ($m) => [
                 'name' => $m->subject_name,
                 'marks' => $m->obtained_marks,

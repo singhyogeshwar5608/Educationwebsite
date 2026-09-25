@@ -26,7 +26,7 @@ class Course extends Model
 
     public function category(): BelongsTo { return $this->belongsTo(CourseCategory::class); }
 
-    public function subjects(): BelongsToMany { return $this->belongsToMany(Subject::class); }
+    public function subjects(): BelongsToMany { return $this->belongsToMany(Subject::class)->withPivot('year'); }
 
     public function gallery(): HasMany { return $this->hasMany(CourseGallery::class); }
 
@@ -35,4 +35,22 @@ class Course extends Model
     public function results(): HasMany { return $this->hasMany(Result::class); }
 
     public function admissionRequests(): HasMany { return $this->hasMany(AdmissionRequest::class); }
+
+    /**
+     * Number of study-years a course lasts, derived from duration_months
+     * (preferred) or the duration text (e.g. "2 Years" → 2). Falls back to 1.
+     */
+    public function studyYears(): int
+    {
+        $months = (int) $this->duration_months;
+        if ($months > 0) {
+            return max(1, (int) ceil($months / 12));
+        }
+
+        if (preg_match('/(\d+(?:\.\d+)?)\s*(year|yr)/i', (string) $this->duration, $m)) {
+            return max(1, (int) ceil((float) $m[1]));
+        }
+
+        return 1;
+    }
 }

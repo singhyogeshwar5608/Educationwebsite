@@ -62,6 +62,17 @@ const MARKS_TABLE_W = 1033;
 const MARKS_TOTAL_TOP = 1300;
 const MARKS_TOTAL_ROW_H = 46;
 
+function getGrade(obtained: number, max: number): string {
+  const p = max > 0 ? (obtained / max) * 100 : 0;
+  if (p >= 90) return "A+";
+  if (p >= 80) return "A";
+  if (p >= 70) return "B+";
+  if (p >= 60) return "B";
+  if (p >= 50) return "C";
+  if (p >= 40) return "D";
+  return "F";
+}
+
 export interface MarksheetRow {
   code: string;
   name: string;
@@ -192,6 +203,8 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
   text(315, 693, 364, 20, "left", true, doc.motherName || "");
   text(890, 695, 260, 20, "left", true, doc.batch || "");
   text(315, 742, 596, 20, "left", true, doc.instituteName);
+  text(320, 742, 596, 20, "left", true, "Pass");
+  text(390, 742, 596, 20, "left", true, "Grade: " + getGrade(doc.total, doc.maxTotal));
 
   // Student photo (match admin ResultPreview: 77%, 8.3%, 14.7%, 13.6%)
   if (doc.photo) {
@@ -234,7 +247,7 @@ export async function renderMarksheetDoc(doc: MarksheetDoc): Promise<HTMLCanvasE
     cells.forEach((c, ci) => {
       const colW = MARKS_COLS[ci] * MARKS_TABLE_W;
       if (c.value !== "" && !(ci === 0)) {
-        cellText(colX, rowTop, colW, MARKS_ROW_H, c.align, c.value, ci === 1, ci === 1 ? 30 : ci === 7 ? 19 : 0, ci === 1 ? 20 : 18);
+        cellText(colX, rowTop, colW - (ci === 1 ? 20 : 0), MARKS_ROW_H, c.align, c.value, ci === 1, ci === 1 ? 30 : ci === 7 ? 19 : 0, ci === 1 ? 20 : 18);
       }
       colX += colW;
     });
@@ -376,6 +389,8 @@ export default function MarksheetDocument({
             <span style={abs(315, 693, 364, 20, "left", true)}>{doc.motherName || ""}</span>
             <span style={abs(890, 695, 260, 20, "left", true)}>{doc.batch || ""}</span>
             <span style={abs(315, 742, 596, 20, "left", true)}>{doc.instituteName}</span>
+            <span style={abs(320, 742, 596, 20, "left", true)}>Pass</span>
+            <span style={abs(390, 742, 596, 20, "left", true)}>{"Grade: " + getGrade(doc.total, doc.maxTotal)}</span>
 
             {doc.photo && (
               <div
@@ -425,7 +440,7 @@ export default function MarksheetDocument({
                       style={{
                         textAlign: "left",
                         verticalAlign: "middle",
-                        padding: "0 30px",
+                        padding: "0 20px 0 30px",
                         lineHeight: 1.1,
                         fontSize: "20px",
                         height: `${MARKS_ROW_H}px`,

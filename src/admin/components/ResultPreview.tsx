@@ -249,30 +249,32 @@ async function renderMarksheetToCanvas(
     const line1 = lines[0]
     const line2 = lines[1]
     const lineH = 22
-    if (line1) ctx.fillText(line1, drawX, vAlign === 'top' ? y : y + h / 2 - lineH / 2)
+    // Single line → center it in the cell (matches the non-wrapped code/marks
+    // cells). Two lines → center the pair as a block.
+    if (line1) ctx.fillText(line1, drawX, vAlign === 'top' ? y : y + h / 2 - (line2 ? lineH / 2 : 0))
     if (line2) ctx.fillText(line2, drawX, vAlign === 'top' ? y + lineH : y + h / 2 + lineH / 2)
   }
 
   // Header fields
-  text(190, 96, 165, 19, 'left', true, result.rollNo || '—')
-  text(840, 96, 188, 19, 'right', true, student?.registrationNo || '—')
+  text(184, 96, 165, 18, 'left', true, result.rollNo || '—')
+  text(837, 97, 188, 18, 'right', true, student?.registrationNo || '—')
   text(193, 390, 740, 26, 'center', true, result.course || '')
-  text(365, 467, 364, 19, 'left', true, result.studentName || '')
-  text(890, 467, 260, 20, 'left', true, fmtDate(student?.dob))
-  text(365, 506, 364, 19, 'left', true, student?.fatherName || '')
-  text(890, 506, 221, 20, 'left', true, student?.duration || (result as any)?.duration || '1 Year')
-  text(365, 545, 364, 19, 'left', true, student?.motherName || '')
-  text(890, 545, 260, 20, 'left', true, student?.batch || shortYear(result.publishedDate))
-  text(365, 584, 596, 19, 'left', true, instituteName)
-  text(200, 1287, 596, 20, 'left', true, 'Pass')
-  text(260, 1287, 596, 20, 'left', true, 'Grade: ' + getGrade(calcTotalObt, calcTotalMax))
+  text(365, 467, 364, 17, 'left', true, result.studentName || '')
+  text(890, 467, 260, 18, 'left', true, fmtDate(student?.dob))
+  text(365, 506, 364, 17, 'left', true, student?.fatherName || '')
+  text(890, 506, 221, 18, 'left', true, (result.year ?? 1) + ' Year')
+  text(365, 545, 364, 17, 'left', true, student?.motherName || '')
+  text(890, 545, 260, 18, 'left', true, student?.batch || shortYear(result.publishedDate))
+  text(365, 584, 596, 17, 'left', true, instituteName)
+  text(200, 1286, 596, 20, 'left', true, 'Pass')
+  text(500, 1288, 596, 18, 'left', true, ': ' + getGrade(calcTotalObt, calcTotalMax))
 
   // Student photo (if available)
   if (student?.photo) {
-    const px = DESIGN_W * 0.79
-    const py = DESIGN_H * 0.083
-    const pw = DESIGN_W * 0.137
-    const ph = DESIGN_H * 0.136
+    const px = DESIGN_W * 0.80
+    const py = DESIGN_H * 0.091
+    const pw = DESIGN_W * 0.127
+    const ph = DESIGN_H * 0.126
     ctx.fillStyle = '#fff'
     ctx.fillRect(px, py, pw, ph)
     ctx.strokeStyle = '#000'
@@ -318,7 +320,7 @@ async function renderMarksheetToCanvas(
           ci === 1,
           ci === 0 ? -8 : ci === 1 ? 30 : ci === 7 ? 19 : 0,
           'middle',
-          ci === 1 ? 20 : 18,
+          18,
         )
       }
       colX += colW
@@ -475,7 +477,7 @@ function MarksheetContent({
 
       <span style={abs(365, 506, 364, 19, 'left')}>{student?.fatherName || ''}</span>
       <span style={abs(890, 506, 221, 20, 'left')}>
-        {student?.duration || (result as any)?.duration || '1 Year'}
+        {(result.year ?? 1) + ' Year'}
       </span>
 
       <span style={abs(365, 545, 364, 19, 'left')}>{student?.motherName || ''}</span>

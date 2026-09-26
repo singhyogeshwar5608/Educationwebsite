@@ -87,6 +87,7 @@ function Results() {
   const [genStep, setGenStep] = useState(1)
   const [selectedStudent, setSelectedStudent] = useState<AvailableStudent | null>(null)
   const [resultYear, setResultYear] = useState(1)
+  const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0])
   const [studentSearch, setStudentSearch] = useState('')
   const [courseFilter, setCourseFilter] = useState('')
   const [subjectMarks, setSubjectMarks] = useState<Record<string, { theory: number; practical: number; practicalMax: number }>>({})
@@ -212,14 +213,14 @@ function Results() {
       percentage: parseFloat(calculations.percentage.toFixed(2)),
       grade: calculations.grade,
       pass: calculations.pass,
-      publishedDate: new Date().toISOString().split('T')[0],
+      publishedDate: issueDate,
     }
     try {
       await resultsService.create(payload)
       toast(`Result for ${selectedStudent.name} published successfully!`)
       queryClient.invalidateQueries({ queryKey: ['results'] })
       queryClient.invalidateQueries({ queryKey: ['available-students'] })
-      setSelectedStudent(null); setStudentSearch(''); setSubjectMarks({}); setGenStep(1); setCourseFilter(''); setActiveTab('published'); setCurrentPage(1)
+      setSelectedStudent(null); setStudentSearch(''); setSubjectMarks({}); setGenStep(1); setCourseFilter(''); setIssueDate(new Date().toISOString().split('T')[0]); setActiveTab('published'); setCurrentPage(1)
     } catch (err: any) {
       toast(getErrorMessage(err, 'Failed to publish result'), 'error')
     } finally {
@@ -309,7 +310,7 @@ function Results() {
                     { key: 'pct', header: '%', render: (r) => <span className="text-gray-700">{r.percentage.toFixed(1)}%</span> },
                     { key: 'grade', header: 'Grade', render: (r) => <span className={getGradeBadgeClass(resultGrade(r))}>{resultGrade(r)}</span> },
                     { key: 'pass', header: 'Pass/Fail', render: (r) => r.pass ? <span className="badge-success">Pass</span> : <span className="badge-danger">Fail</span> },
-                    { key: 'date', header: 'Date', render: (r) => <span className="text-gray-600">{r.publishedDate}</span> },
+                    { key: 'date', header: 'Issue Date', render: (r) => <span className="text-gray-600">{r.publishedDate}</span> },
                     {
                       key: 'actions', header: 'Actions', align: 'center',
                       render: (r) => (
@@ -362,7 +363,7 @@ function Results() {
                   ) : availableStudents.map((s) => {
                     const sel = selectedStudent?.id === s.id
                     return (
-                      <button key={s.id} className={`w-full text-left flex items-center gap-2.5 px-3 py-2 border ${sel ? 'bg-[#E3F2FD] border-[#0078D7]' : 'border-gray-200 hover:bg-gray-50'}`} onClick={() => { setSelectedStudent(s); setResultYear(s.pendingYear ?? 1); setSubjectMarks({}) }}>
+                      <button key={s.id} className={`w-full text-left flex items-center gap-2.5 px-3 py-2 border ${sel ? 'bg-[#E3F2FD] border-[#0078D7]' : 'border-gray-200 hover:bg-gray-50'}`} onClick={() => { setSelectedStudent(s); setResultYear(s.pendingYear ?? 1); setIssueDate(new Date().toISOString().split('T')[0]); setSubjectMarks({}) }}>
                         <div className="w-8 h-8 flex items-center justify-center border border-gray-300 text-[10px] font-bold text-[#222222] bg-gray-100 shrink-0">{s.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}</div>
                         <div className="flex-1 min-w-0"><p className="text-xs font-semibold text-[#222222]">{s.name}</p><p className="text-[10px] text-gray-500">{s.course} • Roll: {s.rollNo}</p></div>
                         <span className="shrink-0 text-[10px] font-bold text-[#0078D7] bg-[#E3F2FD] border border-[#90CAF9] px-2 py-0.5">Year {s.pendingYear ?? 1}</span>
@@ -397,6 +398,16 @@ function Results() {
                     {!selectedStudent.courseYears && <option value={resultYear}>Year {resultYear}</option>}
                   </select>
                   <span className="text-[10px] text-gray-400">Years are generated in order — Year {selectedStudent.pendingYear ?? 1} is next.</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-[11px] font-bold text-gray-600 shrink-0">Issue Date:</label>
+                  <input
+                    type="date"
+                    className="form-input w-44"
+                    value={issueDate}
+                    onChange={(e) => setIssueDate(e.target.value)}
+                  />
+                  <span className="text-[10px] text-gray-400">Date shown on the marksheet. Saves to issue_date.</span>
                 </div>
                 {courseDetails && (
                   <Card padding="sm" className="border border-gray-300"><p className="text-[10px] font-bold text-[#222222] mb-1">Course Information</p><div className="grid grid-cols-3 gap-2 text-[11px]"><div><span className="text-gray-500">Course:</span> {courseDetails.name}</div><div><span className="text-gray-500">Duration:</span> {courseDetails.duration}</div><div><span className="text-gray-500">Subjects:</span> {yearSubjects.length} in Year {resultYear} (of {courseSubjects.length})</div></div></Card>

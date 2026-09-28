@@ -148,7 +148,7 @@ function buildCertFields(
     { x: sX(1140), y: sY(40), w: sW(250), fontSize: sF(24), align: 'right', bold: true, text: data.enrollmentNo || student?.registrationNo || '' },
     { x: sX(500), y: sY(509), w: sW(560), fontSize: sF(28), align: 'center', bold: true, text: data.studentName || '' },
     { x: sX(630), y: sY(554), w: sW(1200), fontSize: sF(28), align: 'left', bold: true, text: student?.fatherName || '' },
-    { x: sX(455), y: sY(598), w: sW(250), fontSize: sF(28), align: 'right', bold: true, text: data.enrollmentNo || student?.registrationNo || '' },
+    { x: sX(490), y: sY(598), w: sW(250), fontSize: sF(28), align: 'right', bold: true, text: data.enrollmentNo || student?.registrationNo || '' },
     { x: sX(450), y: sY(682), w: sW(600), fontSize: sF(32), align: 'center', bold: true, text: data.course || '' },
     { x: sX(260), y: sY(739), w: sW(290), fontSize: sF(28), align: 'center', bold: true, text: data.duration || course?.duration || student?.duration || '' },
     { x: sX(600), y: sY(739), w: sW(290), fontSize: sF(28), align: 'center', bold: true, text: data.session || student?.batch || shortYear(data.issueDate || data.publishedDate) },

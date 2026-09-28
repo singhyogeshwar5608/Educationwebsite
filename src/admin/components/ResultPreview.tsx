@@ -41,6 +41,11 @@ const MARKS_FONT = 18
 const SUBJECT_CODE_X = 53
 const SUBJECT_CODE_W = 58
 
+// Date of issue / publish date overlay. Tweak X/Y to align with the design's
+// "Publish Date" label.
+const ISSUE_DATE_X = 890
+const ISSUE_DATE_Y = 625
+
 function shortYear(fullBatchOrDate: string | undefined | null): string {
   if (!fullBatchOrDate) return ''
   if (fullBatchOrDate.includes('-')) {
@@ -266,6 +271,7 @@ async function renderMarksheetToCanvas(
   text(365, 545, 364, 17, 'left', true, student?.motherName || '')
   text(890, 545, 260, 18, 'left', true, student?.batch || shortYear(result.publishedDate))
   text(365, 584, 596, 17, 'left', true, instituteName)
+  text(ISSUE_DATE_X, ISSUE_DATE_Y, 260, 18, 'left', true, fmtDate(result.publishedDate))
   text(200, 1286, 596, 20, 'left', true, 'Pass')
   text(500, 1288, 596, 18, 'left', true, ': ' + getGrade(calcTotalObt, calcTotalMax))
 
@@ -486,6 +492,7 @@ function MarksheetContent({
       </span>
 
       <span style={abs(365, 584, 596, 19, 'left')}>{instituteName}</span>
+      <span style={abs(840, 1287, 260, 20, 'left')}>{fmtDate(result.publishedDate)}</span>
       <span style={abs(200, 1286, 596, 20, 'left')}>Pass</span>
       <span style={abs(500 , 1288, 596, 18, 'left')}>
         {': ' +

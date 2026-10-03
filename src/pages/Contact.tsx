@@ -74,7 +74,7 @@ export default function Contact() {
             <div className="grid lg:grid-cols-3 gap-10 max-w-5xl mx-auto">
               <div className="space-y-6">
                 {[
-                  { icon: Phone, label: "Phone", value: "92150-52018 / 86858-25071" },
+                  { icon: Phone, label: "Phone", value: "92150-52018 / 9518891720" },
                   { icon: Mail, label: "Email", value: "ztca2012@gmail.com" },
                   { icon: MapPin, label: "Address", value: "Behind Jat School, Rishi Nagar, Gali No. 9, Kaithal, Haryana" },
                 ].map((item) => (

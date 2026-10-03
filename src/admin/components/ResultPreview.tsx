@@ -42,9 +42,9 @@ const SUBJECT_CODE_X = 53
 const SUBJECT_CODE_W = 58
 
 // Date of issue / publish date overlay. Tweak X/Y to align with the design's
-// "Publish Date" label.
-const ISSUE_DATE_X = 890
-const ISSUE_DATE_Y = 625
+// "Publish Date" label (synced with the HTML preview, see MarksheetContent).
+const ISSUE_DATE_X = 840
+const ISSUE_DATE_Y = 1287
 
 function shortYear(fullBatchOrDate: string | undefined | null): string {
   if (!fullBatchOrDate) return ''
@@ -271,7 +271,7 @@ async function renderMarksheetToCanvas(
   text(365, 545, 364, 17, 'left', true, student?.motherName || '')
   text(890, 545, 260, 18, 'left', true, student?.batch || shortYear(result.publishedDate))
   text(365, 584, 596, 17, 'left', true, instituteName)
-  text(ISSUE_DATE_X, ISSUE_DATE_Y, 260, 18, 'left', true, fmtDate(result.publishedDate))
+  text(ISSUE_DATE_X, ISSUE_DATE_Y, 260, 20, 'left', true, fmtDate(result.publishedDate))
   text(200, 1286, 596, 20, 'left', true, 'Pass')
   text(500, 1288, 596, 18, 'left', true, ': ' + getGrade(calcTotalObt, calcTotalMax))
 

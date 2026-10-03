@@ -154,8 +154,8 @@ function buildCertFields(
     { x: sX(600), y: sY(739), w: sW(290), fontSize: sF(28), align: 'center', bold: true, text: data.session || student?.batch || shortYear(data.issueDate || data.publishedDate) },
     { x: sX(1020), y: sY(739), w: sW(280), fontSize: sF(28), align: 'right', bold: true, text: data.percentage != null ? `${data.percentage}%` : '' },
     { x: sX(1000), y: sY(739), w: sW(240), fontSize: sF(28), align: 'left', bold: true, text: data.grade || '' },
-    // { x: sX(310), y: sY(891), w: sW(220), fontSize: sF(24), align: 'center', bold: true, text: fmtDate(data.issueDate || data.publishedDate) },
-    // { x: sX(90), y: sY(960), w: sW(500), fontSize: sF(16), align: 'left', bold: false, text: instituteName },
+    { x: sX(310), y: sY(891), w: sW(220), fontSize: sF(24), align: 'center', bold: true, text: fmtDate(data.issueDate || data.publishedDate) },
+    { x: sX(90), y: sY(960), w: sW(500), fontSize: sF(16), align: 'left', bold: false, text: instituteName },
     // Student photo (positioned like marksheet: right side, near top)
     ...(photoUrl ? [{ x: sX(1280), y: sY(298), w: sW(180), h: sH(235), fontSize: 0, align: 'left', bold: false, text: '__PHOTO__', photoUrl } as CertField & { photoUrl: string }] : []),
   ]
